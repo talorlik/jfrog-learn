@@ -33,3 +33,8 @@ automation/doc_check.html
 credentials.json
 client_secret*.json
 token*.json
+
+# IDEs
+.vscode/
+.cursor/
+.claude/
