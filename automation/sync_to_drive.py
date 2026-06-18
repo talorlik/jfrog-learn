@@ -19,9 +19,16 @@ Auth (two modes; OAuth is preferred for personal @gmail.com accounts):
      zero-quota Drive, so CREATING files in a personal My Drive folder fails with
      'storageQuotaExceeded'. Use OAuth instead on personal accounts.
 
-The target Drive folder (DRIVE_FOLDER_ID) must be writable by whichever identity
-is used. With OAuth that is automatic (it's your own Drive). With a service
-account the folder must be SHARED with the service account's email as Editor.
+Scope: the OAuth path requests the NON-SENSITIVE 'drive.file' scope, which lets
+the app see/manage only files IT creates. This avoids Google's verification +
+logo + authorized-domain requirements, so the OAuth app can be published to
+production (refresh tokens never expire) with no review.
+
+Folder: because of drive.file, the app manages its OWN 'jfrog-learning' folder.
+DRIVE_FOLDER_ID is optional and normally unset; if set to a folder the app can't
+access (e.g. one created by another tool), the script detects that and falls back
+to creating/reusing its own folder by name (DRIVE_FOLDER_NAME, default
+'jfrog-learning').
 
 Idempotency: the folder is the source of truth. Each run looks up Docs by exact
 name; if found it UPDATES the existing Doc's content (same file id, so NotebookLM
@@ -63,7 +70,12 @@ GOOGLE_DOC_MIME = "application/vnd.google-apps.document"
 FOLDER_MIME = "application/vnd.google-apps.folder"
 SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "https://talorlik.github.io/jfrog-learn")
 
-SCOPES = ["https://www.googleapis.com/auth/drive"]
+# Non-sensitive scope: the app can only see/manage files IT creates. This avoids
+# Google's verification + logo + authorized-domain requirements, so the OAuth app
+# can be published to 'In production' (refresh tokens then never expire) with no
+# review. Consequence: the app manages its OWN 'jfrog-learning' folder and Docs;
+# it cannot touch files created outside the app (e.g. a manually uploaded Doc).
+SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 
 # Order pages match the site's learning path / sidebar
 PAGE_ORDER = [
@@ -145,8 +157,27 @@ def _q_escape(s: str) -> str:
 
 
 def find_or_create_folder(drive, name: str) -> str:
+    # If a folder id is pinned, use it ONLY if this app can actually access it.
+    # Under the drive.file scope the app can't see files it didn't create, so a
+    # folder made elsewhere (e.g. via another tool) will 404/403 here — in that
+    # case we fall through and manage our own folder instead.
     if EXPLICIT_FOLDER_ID:
-        return EXPLICIT_FOLDER_ID
+        try:
+            drive.files().get(
+                fileId=EXPLICIT_FOLDER_ID, fields="id", supportsAllDrives=True
+            ).execute()
+            return EXPLICIT_FOLDER_ID
+        except HttpError as e:
+            status = getattr(getattr(e, "resp", None), "status", None)
+            if status in (403, 404):
+                print(
+                    f"NOTE: DRIVE_FOLDER_ID={EXPLICIT_FOLDER_ID} is not accessible to "
+                    f"this app (scope is drive.file, which only sees app-created "
+                    f"files). Falling back to an app-owned '{name}' folder."
+                )
+            else:
+                raise
+    # Find an app-created folder by name (drive.file only returns app-created ones).
     q = (
         f"name = '{_q_escape(name)}' and mimeType = '{FOLDER_MIME}' "
         f"and trashed = false"

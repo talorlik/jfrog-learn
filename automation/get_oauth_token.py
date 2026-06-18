@@ -31,7 +31,9 @@ except ImportError:
         "Then re-run this script."
     )
 
-SCOPES = ["https://www.googleapis.com/auth/drive"]
+# Must match sync_to_drive.py. drive.file is non-sensitive (no verification),
+# so the app can be published to production and tokens won't expire after 7 days.
+SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 
 
 def main():

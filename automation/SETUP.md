@@ -22,6 +22,23 @@ is **OAuth**: the sync authenticates **as you**, so created Docs count against
 your own 15 GB. You approve access once and store a refresh token as a GitHub
 secret — no passwords, no billing, revocable any time.
 
+### Scope: `drive.file` (no verification needed)
+
+The sync requests the **non-sensitive** scope
+`https://www.googleapis.com/auth/drive.file`, which lets the app see and manage
+**only the files it creates**. This is deliberate: the broad `.../auth/drive`
+scope is "sensitive" and forces Google to require a **logo, a verified domain,
+and brand verification** before you can publish the app — which you can't satisfy
+for a personal CLI app. With `drive.file` there is **no verification, no logo, no
+authorized domain**, so you can publish to **In production** freely and your
+refresh token never expires.
+
+The one consequence: the app can only touch files **it** created. So it manages
+its **own** `jfrog-learning` folder (it creates one on first run) and the Docs
+inside it. It cannot edit files made outside the app — including the earlier
+manually-uploaded test Doc, which you can just delete. You point NotebookLM at
+the folder the app creates.
+
 You only do the steps below **once**. After that it is fully automated.
 
 ---
@@ -34,9 +51,10 @@ You only do the steps below **once**. After that it is fully automated.
    these are one connected flow — the consent config is a prerequisite wizard you
    run once, then you create the client and download `client_secret.json`.
 3. A helper script run once (in a project-local `venv`) to **mint a refresh
-   token**.
+   token**, then **publish the app to production** so the token doesn't expire.
 4. That token JSON added as the GitHub **secret** `GOOGLE_OAUTH_CREDENTIALS`.
-5. The GitHub **variable** `DRIVE_FOLDER_ID` set.
+5. (Optional) the app creates its own `jfrog-learning` folder; you don't need to
+   set `DRIVE_FOLDER_ID`.
 
 Total time: ~10 minutes.
 
@@ -77,17 +95,20 @@ click **Get started**, then:
 4. **Finish** — tick **I agree to the Google API Services: User Data Policy** →
    **Continue** → **Create**.
 
-> You don't configure scopes here — the script requests the Drive scope at run
-> time. (Scopes live under **Data access** if you ever need them.)
+> You don't configure scopes here — the script requests the `drive.file` scope at
+> run time. (Scopes live under **Data access** if you ever need them.)
+>
+> **Authorised domains:** leave this **empty**. You only need it if you fill in a
+> home page / privacy / ToS URL or use a Web-application client — neither applies
+> here (Desktop app + `drive.file`). If the project already lists unrelated
+> domains from another integration (e.g. `make.com`), leave them alone; don't add
+> any for this app. **Leave the App logo empty too** — adding a logo would
+> trigger verification.
 
-**3b. Add yourself as a test user.** Go to **Google Auth Platform → Audience**.
-Under **Test users**, click **Add users**, enter **your own Gmail address**, and
-click **Save**.
-
-> Keeping the app in **Testing** is fine. Caveat: refresh tokens for Testing
-> apps can expire after ~7 days. To make the token permanent, on the **Audience**
-> page click **Publish app** (you can ignore Google's verification prompt — it's
-> not required for your own personal-Drive app). See "Keeping the token alive".
+**3b. Add yourself as a test user (only needed while in Testing).** Go to
+**Google Auth Platform → Audience**. Under **Test users**, click **Add users**,
+enter **your own Gmail address**, and click **Save**. (Once you publish to
+production in Step 4, test users no longer matter.)
 
 **3c. Create the OAuth client (Desktop app).** Go to **Google Auth Platform →
 Clients** → **Create client**
@@ -134,6 +155,14 @@ python get_oauth_token.py
 > Keep `client_secret.json` and the printed token private. The repo's
 > `.gitignore` already excludes them so they won't be committed.
 
+**Now publish the app so the token never expires.** Go to **Google Auth Platform
+→ Audience** and click **Publish app** → confirm. Because the app uses the
+non-sensitive `drive.file` scope and has **no logo**, Google does **not** require
+verification, a logo, or an authorized domain — it publishes immediately. The
+refresh token you just minted will then keep working indefinitely. (If Google
+still shows a verification checklist, it means the broad `drive` scope or a logo
+slipped in — remove the logo and confirm the client is the `drive.file` one.)
+
 ## Step 5 — Add the token as a GitHub secret
 
 1. GitHub repo → **Settings → Secrets and variables → Actions**
@@ -142,18 +171,22 @@ python get_oauth_token.py
 3. **Name:** `GOOGLE_OAUTH_CREDENTIALS`
 4. **Value:** paste the single JSON line from Step 4 → **Add secret**.
 
-## Step 6 — Point CI at the existing folder
+## Step 6 — (Optional) folder location
 
-1. Same page → **Variables** tab → **New repository variable**
-   ([link](https://github.com/talorlik/jfrog-learn/settings/variables/actions)).
-2. **Name:** `DRIVE_FOLDER_ID`
-3. **Value:** `1zk92hPtiIWvFULqCaBlDhj9IgblbIsJg`
-   (the existing
-   [jfrog-learning folder](https://drive.google.com/drive/folders/1zk92hPtiIWvFULqCaBlDhj9IgblbIsJg))
-   → **Add variable**.
+**You can skip this step.** On its first run the app **creates its own**
+`jfrog-learning` folder in your Drive and reuses it on every later run. That's
+the simplest and most reliable setup with the `drive.file` scope.
 
-> Because the sync now runs **as you**, it can already see and write this folder
-> in your own Drive — no folder sharing needed.
+Do **not** reuse the old `DRIVE_FOLDER_ID` from the service-account attempt: that
+folder was created by a different tool, so under `drive.file` this app can't see
+or write into it. If you set that variable, the script will detect it's
+inaccessible and fall back to its own folder anyway (you'll see a `NOTE:` in the
+logs). For a clean setup, just **don't set `DRIVE_FOLDER_ID`** and let the app
+make the folder.
+
+> After the first successful run, open Drive, find the `jfrog-learning` folder the
+> app created, and use **that** folder's Docs as your NotebookLM sources. You can
+> delete the earlier manually-uploaded test Doc.
 
 ---
 
@@ -180,13 +213,19 @@ page plus **JFrog Learn — Index**.
 
 ## Keeping the token alive
 
-If your OAuth app stays in **Testing** mode, Google may expire the refresh token
-after ~7 days, and the workflow will start failing with an auth error. To make it
-permanent, go to **Google Auth Platform → Audience** and click **Publish app**.
-Publishing a personal app for your own Drive does **not** require Google's
-verification review. After publishing, the refresh token from Step 4 keeps
-working indefinitely. (If a token ever does expire, just re-run Step 4 and update
-the secret.)
+Why publishing matters: a project in **Testing** mode issues refresh tokens that
+expire after ~7 days, after which the workflow fails with an auth error. Setting
+the app to **In production** (Step 4's publish action) makes the refresh token
+last indefinitely.
+
+The reason this works without a logo, domain, or Google review is the
+**`drive.file` scope** — it's non-sensitive, so publishing it does **not** trigger
+verification. (The broad `.../auth/drive` scope is what forces a logo + verified
+domain + brand verification; this app deliberately doesn't use it.) So: no logo,
+no authorized domain, publish immediately.
+
+If a token ever does stop working, re-run Step 4 (mint a fresh token) and update
+the `GOOGLE_OAUTH_CREDENTIALS` secret.
 
 ## Running locally (optional)
 
@@ -199,7 +238,7 @@ python sync_to_drive.py --dry-run
 
 # Real run against Drive, as you (paste your token JSON into the env var):
 export GOOGLE_OAUTH_CREDENTIALS='{"client_id":"...","client_secret":"...","refresh_token":"..."}'
-export DRIVE_FOLDER_ID=1zk92hPtiIWvFULqCaBlDhj9IgblbIsJg
+# (No DRIVE_FOLDER_ID needed — the app creates/reuses its own jfrog-learning folder.)
 python sync_to_drive.py
 ```
 
@@ -209,8 +248,12 @@ python sync_to_drive.py
   the secret is empty or malformed. It must be the exact single JSON line printed
   by `get_oauth_token.py` (with `client_id`, `client_secret`, `refresh_token`).
 - **`invalid_grant` / token expired** — your app is in Testing mode and the
-  7-day window lapsed. **Publish** the OAuth app (see above), or re-run Step 4 and
-  update the secret.
+  7-day window lapsed. **Publish** the OAuth app to production (Step 4), then
+  re-run Step 4 to mint a fresh token and update the secret.
+- **Can't find the synced Docs / a second `jfrog-learning` folder appeared** —
+  with `drive.file` the app makes and uses its **own** folder. Don't set
+  `DRIVE_FOLDER_ID` to a folder created by another tool; use the folder the app
+  creates. A `NOTE:` line in the run logs confirms when it fell back to its own.
 - **`storageQuotaExceeded`** — this should no longer happen with OAuth. If you
   see it, the workflow is still using the old service-account secret; make sure
   `GOOGLE_OAUTH_CREDENTIALS` is set (it takes priority) and remove the old

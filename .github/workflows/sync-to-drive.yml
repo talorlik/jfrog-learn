@@ -9,8 +9,9 @@ name: Sync to Google Drive
 #
 # Requires a repository secret GOOGLE_OAUTH_CREDENTIALS (OAuth user credentials
 # JSON: client_id, client_secret, refresh_token) so the sync acts as you and
-# uses your own Drive quota. See automation/SETUP.md for the one-time setup.
-# Set a repository variable DRIVE_FOLDER_ID to target the existing folder.
+# uses your own Drive quota. The app uses the non-sensitive drive.file scope and
+# manages its OWN 'jfrog-learning' folder, so DRIVE_FOLDER_ID is optional and is
+# normally left unset. See automation/SETUP.md for the one-time setup.
 
 on:
   push:
