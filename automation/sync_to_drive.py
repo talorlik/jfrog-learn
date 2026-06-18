@@ -5,15 +5,23 @@ it into Google Drive as native Google Docs (one Doc per page) inside a
 'jfrog-learning' folder, plus an auto-rebuilt index Doc. Designed to run in CI on
 every push to main, then have NotebookLM use the Docs as sources.
 
-Auth: a Google Cloud service account JSON key.
-  - In CI: provide the JSON via env var GOOGLE_SERVICE_ACCOUNT_JSON (the raw JSON
-    string, stored as a GitHub Actions secret).
-  - Locally: set GOOGLE_APPLICATION_CREDENTIALS to a key file path, or
-    GOOGLE_SERVICE_ACCOUNT_JSON to the JSON string.
+Auth (two modes; OAuth is preferred for personal @gmail.com accounts):
 
-The target Drive folder must be SHARED with the service account's email
-(…@….iam.gserviceaccount.com) as Editor, OR you pass an explicit folder id via
-DRIVE_FOLDER_ID and the service account has access to it.
+  1. OAuth user credentials (recommended) — the script acts as YOU, so created
+     Docs count against your own 15 GB Drive quota. Provide a single env var
+     GOOGLE_OAUTH_CREDENTIALS containing JSON with:
+         {"client_id": "...", "client_secret": "...", "refresh_token": "..."}
+     In CI, store that JSON as the GitHub secret GOOGLE_OAUTH_CREDENTIALS.
+
+  2. Service account (only works for Google Workspace / Shared Drives) — provide
+     the key JSON via GOOGLE_SERVICE_ACCOUNT_JSON, or a key file path via
+     GOOGLE_APPLICATION_CREDENTIALS. NOTE: a service account has its own
+     zero-quota Drive, so CREATING files in a personal My Drive folder fails with
+     'storageQuotaExceeded'. Use OAuth instead on personal accounts.
+
+The target Drive folder (DRIVE_FOLDER_ID) must be writable by whichever identity
+is used. With OAuth that is automatic (it's your own Drive). With a service
+account the folder must be SHARED with the service account's email as Editor.
 
 Idempotency: the folder is the source of truth. Each run looks up Docs by exact
 name; if found it UPDATES the existing Doc's content (same file id, so NotebookLM
@@ -32,6 +40,7 @@ import time
 from pathlib import Path
 
 from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials as UserCredentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseUpload
@@ -77,18 +86,51 @@ INDEX_DOC_NAME = "JFrog Learn — Index"
 # Auth
 # ---------------------------------------------------------------------------
 
+TOKEN_URI = "https://oauth2.googleapis.com/token"
+
+
+def _oauth_creds_from_json(raw: str):
+    info = json.loads(raw)
+    missing = [k for k in ("client_id", "client_secret", "refresh_token") if not info.get(k)]
+    if missing:
+        sys.exit(
+            "ERROR: GOOGLE_OAUTH_CREDENTIALS is missing required field(s): "
+            + ", ".join(missing)
+            + ". It must be JSON with client_id, client_secret, refresh_token."
+        )
+    return UserCredentials(
+        token=None,
+        refresh_token=info["refresh_token"],
+        client_id=info["client_id"],
+        client_secret=info["client_secret"],
+        token_uri=info.get("token_uri", TOKEN_URI),
+        scopes=SCOPES,
+    )
+
+
 def get_drive():
-    raw = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
+    """Build a Drive client. Prefer OAuth user creds (works on personal Gmail);
+    fall back to a service account (Workspace / Shared Drives only)."""
+    oauth = os.environ.get("GOOGLE_OAUTH_CREDENTIALS", "").strip()
+    sa_raw = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
     keyfile = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
-    if raw:
-        info = json.loads(raw)
-        creds = service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
+
+    if oauth:
+        creds = _oauth_creds_from_json(oauth)
+        print("auth: OAuth user credentials")
+    elif sa_raw:
+        creds = service_account.Credentials.from_service_account_info(
+            json.loads(sa_raw), scopes=SCOPES
+        )
+        print("auth: service account (JSON)")
     elif keyfile and Path(keyfile).exists():
         creds = service_account.Credentials.from_service_account_file(keyfile, scopes=SCOPES)
+        print("auth: service account (key file)")
     else:
         sys.exit(
-            "ERROR: no service account credentials. Set GOOGLE_SERVICE_ACCOUNT_JSON "
-            "(raw JSON) or GOOGLE_APPLICATION_CREDENTIALS (path to key file)."
+            "ERROR: no credentials. Set GOOGLE_OAUTH_CREDENTIALS (recommended; JSON "
+            "with client_id, client_secret, refresh_token), or a service account via "
+            "GOOGLE_SERVICE_ACCOUNT_JSON / GOOGLE_APPLICATION_CREDENTIALS."
         )
     # cache_discovery=False avoids a noisy warning in CI
     return build("drive", "v3", credentials=creds, cache_discovery=False)

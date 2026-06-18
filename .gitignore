@@ -10,7 +10,9 @@ automation/*.json
 automation/gws.err
 automation/doc_check.html
 
-# Never commit service account keys
+# Never commit credentials (service account keys or OAuth client/token)
 *service-account*.json
 *-key.json
 credentials.json
+client_secret*.json
+token*.json

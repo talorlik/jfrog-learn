@@ -7,9 +7,10 @@ name: Sync to Google Drive
 # Runs on every push to main that touches a page, the converter, or this
 # workflow. Can also be run manually from the Actions tab.
 #
-# Requires a repository secret GOOGLE_SERVICE_ACCOUNT_JSON (the full service
-# account key JSON). See automation/SETUP.md for the one-time setup. Optionally
-# set a repository variable DRIVE_FOLDER_ID to target a specific existing folder.
+# Requires a repository secret GOOGLE_OAUTH_CREDENTIALS (OAuth user credentials
+# JSON: client_id, client_secret, refresh_token) so the sync acts as you and
+# uses your own Drive quota. See automation/SETUP.md for the one-time setup.
+# Set a repository variable DRIVE_FOLDER_ID to target the existing folder.
 
 on:
   push:
@@ -45,7 +46,7 @@ jobs:
       - name: Sync pages to Google Drive
         working-directory: automation
         env:
-          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_OAUTH_CREDENTIALS: ${{ secrets.GOOGLE_OAUTH_CREDENTIALS }}
           DRIVE_FOLDER_ID: ${{ vars.DRIVE_FOLDER_ID }}
           SITE_BASE_URL: https://talorlik.github.io/jfrog-learn
         run: python sync_to_drive.py
