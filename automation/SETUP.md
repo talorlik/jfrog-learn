@@ -29,13 +29,21 @@ You only do the steps below **once**. After that it is fully automated.
 ## What you'll set up
 
 1. A Google Cloud **project** with the **Drive API** enabled.
-2. An **OAuth consent screen** (External, with you as a test user).
-3. An **OAuth client** of type **Desktop app** (download `client_secret.json`).
-4. Run a helper script once to **mint a refresh token**.
-5. Add that token JSON as the GitHub **secret** `GOOGLE_OAUTH_CREDENTIALS`.
-6. Set the GitHub **variable** `DRIVE_FOLDER_ID`.
+2. The **Google Auth Platform** configured (consent screen) with you as a test
+   user, then an **OAuth client** of type **Desktop app**. In the current console
+   these are one connected flow — the consent config is a prerequisite wizard you
+   run once, then you create the client and download `client_secret.json`.
+3. A helper script run once (in a project-local `venv`) to **mint a refresh
+   token**.
+4. That token JSON added as the GitHub **secret** `GOOGLE_OAUTH_CREDENTIALS`.
+5. The GitHub **variable** `DRIVE_FOLDER_ID` set.
 
 Total time: ~10 minutes.
+
+> Note on the UI: Google renamed this area to the **Google Auth Platform**. The
+> old "OAuth consent screen" page is now the **Branding** + **Audience** sections,
+> and "Credentials → OAuth client IDs" is now the **Clients** section. The steps
+> below use the current names.
 
 ---
 
@@ -51,42 +59,65 @@ Total time: ~10 minutes.
    ([link](https://console.cloud.google.com/apis/library)).
 2. Search **Google Drive API**, open it, click **Enable**.
 
-## Step 3 — Configure the OAuth consent screen
+## Step 3 — Configure the Google Auth Platform and create the OAuth client
 
-1. **APIs & Services → OAuth consent screen**
-   ([link](https://console.cloud.google.com/apis/credentials/consent)).
-2. User type: **External** → **Create**.
-3. Fill the required fields: **App name** (e.g. `jfrog-learn-sync`), **User
-   support email** (your email), **Developer contact email** (your email).
-   Leave the rest blank → **Save and Continue**.
-4. **Scopes** page → just **Save and Continue** (the script requests the Drive
-   scope at run time; you don't need to add it here).
-5. **Test users** page → **Add Users** → enter **your own Gmail address** →
-   **Save and Continue**.
+In the current console these are one connected flow: the consent screen is a
+one-time **Get started** wizard, and only after it's configured can you create a
+client. Everything below lives under **Menu → Google Auth Platform**
+([link](https://console.cloud.google.com/auth/overview)).
 
-   > Keeping the app in "Testing" mode is fine. The only caveat: refresh tokens
-   > for apps in Testing can expire after 7 days. To make the token permanent,
-   > after finishing setup come back here and click **Publish app** (you can
-   > ignore Google's verification prompt — it's not required for your own Drive
-   > with a Testing/Published personal app). See "Keeping the token alive" below.
+**3a. Configure the consent screen (one-time wizard).** Open **Google Auth
+Platform → Branding**. If you see *"Google Auth Platform not configured yet"*,
+click **Get started**, then:
 
-## Step 4 — Create an OAuth client (Desktop app)
+1. **App Information** — enter an **App name** (e.g. `jfrog-learn-sync`) and pick
+   your email as **User support email** → **Next**.
+2. **Audience** — select **External** → **Next**.
+3. **Contact Information** — enter your email → **Next**.
+4. **Finish** — tick **I agree to the Google API Services: User Data Policy** →
+   **Continue** → **Create**.
 
-1. **APIs & Services → Credentials**
-   ([link](https://console.cloud.google.com/apis/credentials)).
-2. **Create Credentials → OAuth client ID**.
-3. **Application type: Desktop app**. Name it e.g. `jfrog-learn-cli` → **Create**.
-4. In the dialog, click **Download JSON**. Save it as **`client_secret.json`**
-   inside the `automation/` folder of your local clone of this repo.
+> You don't configure scopes here — the script requests the Drive scope at run
+> time. (Scopes live under **Data access** if you ever need them.)
 
-## Step 5 — Mint a refresh token (run once, locally)
+**3b. Add yourself as a test user.** Go to **Google Auth Platform → Audience**.
+Under **Test users**, click **Add users**, enter **your own Gmail address**, and
+click **Save**.
 
-On your own computer (it needs a browser):
+> Keeping the app in **Testing** is fine. Caveat: refresh tokens for Testing
+> apps can expire after ~7 days. To make the token permanent, on the **Audience**
+> page click **Publish app** (you can ignore Google's verification prompt — it's
+> not required for your own personal-Drive app). See "Keeping the token alive".
+
+**3c. Create the OAuth client (Desktop app).** Go to **Google Auth Platform →
+Clients** → **Create client**
+([link](https://console.cloud.google.com/auth/clients)):
+
+1. **Application type: Desktop app** (NOT "Web application" — Desktop app needs
+   no redirect URIs and works with the local helper script).
+2. **Name** it e.g. `jfrog-learn-cli` → **Create**.
+3. In the confirmation dialog click **Download JSON** (or later, the download
+   icon next to the client in the Clients list). Save it as
+   **`client_secret.json`** inside the `automation/` folder of your local clone.
+
+## Step 4 — Mint a refresh token (run once, locally)
+
+On your own computer (it needs a browser). Use a **project-local virtual
+environment** so dependencies stay inside the repo and don't touch your system
+Python:
 
 ```bash
 cd automation
+
+# Create and activate a venv inside the project (one time):
+python3 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+
+# Install deps into the venv:
 pip install -r requirements.txt google-auth-oauthlib
-python get_oauth_token.py            # uses ./client_secret.json
+
+# Run the helper (uses ./client_secret.json):
+python get_oauth_token.py
 ```
 
 1. A browser opens. **Sign in with the same Gmail account** you added as a test
@@ -96,18 +127,22 @@ python get_oauth_token.py            # uses ./client_secret.json
 2. The script prints a **single line of JSON** containing `client_id`,
    `client_secret`, and `refresh_token`. **Copy that entire line.**
 
+> The `.venv/` folder is git-ignored, so it won't be committed. When you're done
+> you can run `deactivate`. CI does **not** use this venv — GitHub Actions
+> installs `requirements.txt` fresh on its runner.
+>
 > Keep `client_secret.json` and the printed token private. The repo's
 > `.gitignore` already excludes them so they won't be committed.
 
-## Step 6 — Add the token as a GitHub secret
+## Step 5 — Add the token as a GitHub secret
 
 1. GitHub repo → **Settings → Secrets and variables → Actions**
    ([link](https://github.com/talorlik/jfrog-learn/settings/secrets/actions)).
 2. **Secrets** tab → **New repository secret**.
 3. **Name:** `GOOGLE_OAUTH_CREDENTIALS`
-4. **Value:** paste the single JSON line from Step 5 → **Add secret**.
+4. **Value:** paste the single JSON line from Step 4 → **Add secret**.
 
-## Step 7 — Point CI at the existing folder
+## Step 6 — Point CI at the existing folder
 
 1. Same page → **Variables** tab → **New repository variable**
    ([link](https://github.com/talorlik/jfrog-learn/settings/variables/actions)).
@@ -122,7 +157,7 @@ python get_oauth_token.py            # uses ./client_secret.json
 
 ---
 
-## Step 8 — Run it
+## Step 7 — Run it
 
 The workflow runs automatically on any push to `main` that changes `pages/**`.
 To run it immediately:
@@ -134,7 +169,7 @@ To run it immediately:
 When it finishes, open the `jfrog-learning` folder in Drive — one Google Doc per
 page plus **JFrog Learn — Index**.
 
-## Step 9 — Add the Docs to NotebookLM
+## Step 8 — Add the Docs to NotebookLM
 
 1. Open [NotebookLM](https://notebooklm.google.com/) → **New notebook**.
 2. **Add source → Google Drive**, then select the JFrog Learn Docs.
@@ -147,17 +182,17 @@ page plus **JFrog Learn — Index**.
 
 If your OAuth app stays in **Testing** mode, Google may expire the refresh token
 after ~7 days, and the workflow will start failing with an auth error. To make it
-permanent, go back to the **OAuth consent screen** and click **Publish app**.
+permanent, go to **Google Auth Platform → Audience** and click **Publish app**.
 Publishing a personal app for your own Drive does **not** require Google's
-verification review. After publishing, the refresh token from Step 5 keeps
-working indefinitely. (If a token ever does expire, just re-run Step 5 and update
+verification review. After publishing, the refresh token from Step 4 keeps
+working indefinitely. (If a token ever does expire, just re-run Step 4 and update
 the secret.)
 
 ## Running locally (optional)
 
 ```bash
 cd automation
-pip install -r requirements.txt
+source .venv/bin/activate          # the venv created in Step 4
 
 # Dry run — writes Markdown previews to automation/_md_preview/, no Drive writes:
 python sync_to_drive.py --dry-run
@@ -174,7 +209,7 @@ python sync_to_drive.py
   the secret is empty or malformed. It must be the exact single JSON line printed
   by `get_oauth_token.py` (with `client_id`, `client_secret`, `refresh_token`).
 - **`invalid_grant` / token expired** — your app is in Testing mode and the
-  7-day window lapsed. **Publish** the OAuth app (see above), or re-run Step 5 and
+  7-day window lapsed. **Publish** the OAuth app (see above), or re-run Step 4 and
   update the secret.
 - **`storageQuotaExceeded`** — this should no longer happen with OAuth. If you
   see it, the workflow is still using the old service-account secret; make sure

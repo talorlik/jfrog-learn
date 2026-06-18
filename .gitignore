@@ -1,8 +1,25 @@
 qa-*.png
 .DS_Store
 
+# ---- Python ----
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
 
 # Local automation test artifacts (not committed)
 automation/_md_preview/
