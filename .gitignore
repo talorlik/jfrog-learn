@@ -3,3 +3,14 @@ qa-*.png
 
 __pycache__/
 *.pyc
+
+# Local automation test artifacts (not committed)
+automation/_md_preview/
+automation/*.json
+automation/gws.err
+automation/doc_check.html
+
+# Never commit service account keys
+*service-account*.json
+*-key.json
+credentials.json

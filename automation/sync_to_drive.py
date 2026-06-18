@@ -1,0 +1,294 @@
+#!/usr/bin/env python3
+"""
+sync_to_drive.py — Convert every JFrog Learn content page to Markdown and mirror
+it into Google Drive as native Google Docs (one Doc per page) inside a
+'jfrog-learning' folder, plus an auto-rebuilt index Doc. Designed to run in CI on
+every push to main, then have NotebookLM use the Docs as sources.
+
+Auth: a Google Cloud service account JSON key.
+  - In CI: provide the JSON via env var GOOGLE_SERVICE_ACCOUNT_JSON (the raw JSON
+    string, stored as a GitHub Actions secret).
+  - Locally: set GOOGLE_APPLICATION_CREDENTIALS to a key file path, or
+    GOOGLE_SERVICE_ACCOUNT_JSON to the JSON string.
+
+The target Drive folder must be SHARED with the service account's email
+(…@….iam.gserviceaccount.com) as Editor, OR you pass an explicit folder id via
+DRIVE_FOLDER_ID and the service account has access to it.
+
+Idempotency: the folder is the source of truth. Each run looks up Docs by exact
+name; if found it UPDATES the existing Doc's content (same file id, so NotebookLM
+source links stay valid); if not found it CREATES a new Doc.
+
+Diagrams: handled upstream in html_to_markdown.py (CSS/HTML diagrams -> Mermaid
+fenced code blocks; text fallback otherwise). No image rendering needed today.
+"""
+from __future__ import annotations
+
+import io
+import json
+import os
+import sys
+import time
+from pathlib import Path
+
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaIoBaseUpload
+
+import html_to_markdown as H
+
+# ---------------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------------
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+PAGES_DIR = REPO_ROOT / "pages"
+FOLDER_NAME = os.environ.get("DRIVE_FOLDER_NAME", "jfrog-learning")
+EXPLICIT_FOLDER_ID = os.environ.get("DRIVE_FOLDER_ID", "").strip()
+
+# Pages to exclude from the sync (search functionality, etc.)
+EXCLUDE = {"search"}
+
+GOOGLE_DOC_MIME = "application/vnd.google-apps.document"
+FOLDER_MIME = "application/vnd.google-apps.folder"
+SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "https://talorlik.github.io/jfrog-learn")
+
+SCOPES = ["https://www.googleapis.com/auth/drive"]
+
+# Order pages match the site's learning path / sidebar
+PAGE_ORDER = [
+    "fundamentals",
+    "replication-federation",
+    "build-promotion",
+    "release-bundles",
+    "rest-api",
+    "frogbot",
+    "pipelines",
+    "access-tokens",
+    "kubernetes-helm",
+]
+
+DOC_NAME_PREFIX = "JFrog Learn — "
+INDEX_DOC_NAME = "JFrog Learn — Index"
+
+
+# ---------------------------------------------------------------------------
+# Auth
+# ---------------------------------------------------------------------------
+
+def get_drive():
+    raw = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
+    keyfile = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
+    if raw:
+        info = json.loads(raw)
+        creds = service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
+    elif keyfile and Path(keyfile).exists():
+        creds = service_account.Credentials.from_service_account_file(keyfile, scopes=SCOPES)
+    else:
+        sys.exit(
+            "ERROR: no service account credentials. Set GOOGLE_SERVICE_ACCOUNT_JSON "
+            "(raw JSON) or GOOGLE_APPLICATION_CREDENTIALS (path to key file)."
+        )
+    # cache_discovery=False avoids a noisy warning in CI
+    return build("drive", "v3", credentials=creds, cache_discovery=False)
+
+
+# ---------------------------------------------------------------------------
+# Drive helpers
+# ---------------------------------------------------------------------------
+
+def _q_escape(s: str) -> str:
+    return s.replace("\\", "\\\\").replace("'", "\\'")
+
+
+def find_or_create_folder(drive, name: str) -> str:
+    if EXPLICIT_FOLDER_ID:
+        return EXPLICIT_FOLDER_ID
+    q = (
+        f"name = '{_q_escape(name)}' and mimeType = '{FOLDER_MIME}' "
+        f"and trashed = false"
+    )
+    res = drive.files().list(
+        q=q, fields="files(id,name)", spaces="drive",
+        supportsAllDrives=True, includeItemsFromAllDrives=True,
+    ).execute()
+    files = res.get("files", [])
+    if files:
+        return files[0]["id"]
+    meta = {"name": name, "mimeType": FOLDER_MIME}
+    folder = drive.files().create(body=meta, fields="id", supportsAllDrives=True).execute()
+    print(f"created folder '{name}' -> {folder['id']}")
+    return folder["id"]
+
+
+def find_doc(drive, folder_id: str, name: str):
+    q = (
+        f"name = '{_q_escape(name)}' and mimeType = '{GOOGLE_DOC_MIME}' "
+        f"and '{folder_id}' in parents and trashed = false"
+    )
+    res = drive.files().list(
+        q=q, fields="files(id,name,modifiedTime)", spaces="drive",
+        supportsAllDrives=True, includeItemsFromAllDrives=True,
+    ).execute()
+    files = res.get("files", [])
+    return files[0] if files else None
+
+
+def _media_from_markdown(md_text: str) -> MediaIoBaseUpload:
+    data = md_text.encode("utf-8")
+    return MediaIoBaseUpload(
+        io.BytesIO(data), mimetype="text/markdown", resumable=False
+    )
+
+
+def upsert_doc(drive, folder_id: str, name: str, md_text: str) -> tuple[str, str]:
+    """Create or update a Google Doc from Markdown. Returns (file_id, action)."""
+    media = _media_from_markdown(md_text)
+    existing = find_doc(drive, folder_id, name)
+    for attempt in range(3):
+        try:
+            if existing:
+                fid = existing["id"]
+                # Update content in place: upload new markdown media; Drive
+                # re-converts it into the Google Doc, keeping the same file id.
+                drive.files().update(
+                    fileId=fid, media_body=media, supportsAllDrives=True,
+                    body={"name": name},
+                ).execute()
+                return fid, "updated"
+            else:
+                meta = {
+                    "name": name,
+                    "mimeType": GOOGLE_DOC_MIME,
+                    "parents": [folder_id],
+                }
+                created = drive.files().create(
+                    body=meta, media_body=media, fields="id",
+                    supportsAllDrives=True,
+                ).execute()
+                return created["id"], "created"
+        except HttpError as e:
+            status = getattr(e, "status_code", None) or getattr(e.resp, "status", None)
+            if status in (429, 500, 502, 503) and attempt < 2:
+                time.sleep(2 ** attempt)
+                continue
+            raise
+    raise RuntimeError(f"failed to upsert '{name}'")
+
+
+# ---------------------------------------------------------------------------
+# Build markdown for each page
+# ---------------------------------------------------------------------------
+
+def doc_name_for(slug: str, title: str) -> str:
+    return f"{DOC_NAME_PREFIX}{title}"
+
+
+def list_pages() -> list[str]:
+    slugs = []
+    for p in sorted(PAGES_DIR.glob("*.html")):
+        slug = p.stem
+        if slug in EXCLUDE:
+            continue
+        slugs.append(slug)
+    # order known pages first, then any extras alphabetically
+    ordered = [s for s in PAGE_ORDER if s in slugs]
+    extras = [s for s in slugs if s not in PAGE_ORDER]
+    return ordered + extras
+
+
+def build_markdown(slug: str) -> tuple[str, str]:
+    html = (PAGES_DIR / f"{slug}.html").read_text(encoding="utf-8")
+    title, body = H.convert_page(html)
+    src_url = f"{SITE_BASE_URL}/pages/{slug}.html"
+    header = f"# {title}\n\n*Source: [{title}]({src_url})*\n\n"
+    return title, header + body + "\n"
+
+
+def build_index_markdown(entries: list[dict]) -> str:
+    lines = [
+        "# JFrog Learn — Index",
+        "",
+        "*Auto-generated index of all JFrog Learn pages, kept in sync with the "
+        f"[website]({SITE_BASE_URL}/) on every push.*",
+        "",
+        "Each entry links to its Google Doc (use these as NotebookLM sources) and "
+        "to the live page.",
+        "",
+        "## Pages",
+        "",
+    ]
+    for i, e in enumerate(entries, 1):
+        doc_link = f"https://docs.google.com/document/d/{e['file_id']}/edit"
+        lines.append(
+            f"{i}. **[{e['title']}]({doc_link})** — "
+            f"[live page]({e['site_url']})"
+        )
+    lines += [
+        "",
+        "---",
+        "",
+        f"Total pages: {len(entries)}. Folder: '{FOLDER_NAME}'.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+def main():
+    dry = "--dry-run" in sys.argv
+    out_dir = REPO_ROOT / "automation" / "_md_preview"
+    if dry:
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+    slugs = list_pages()
+    print(f"pages to sync ({len(slugs)}): {', '.join(slugs)}")
+
+    if dry:
+        entries = []
+        for slug in slugs:
+            title, md = build_markdown(slug)
+            (out_dir / f"{slug}.md").write_text(md, encoding="utf-8")
+            entries.append({
+                "title": title,
+                "file_id": f"DRYRUN_{slug}",
+                "site_url": f"{SITE_BASE_URL}/pages/{slug}.html",
+            })
+            print(f"  [dry] {slug}: {len(md)} chars -> {out_dir / (slug + '.md')}")
+        idx = build_index_markdown(entries)
+        (out_dir / "_index.md").write_text(idx, encoding="utf-8")
+        print(f"  [dry] index -> {out_dir / '_index.md'}")
+        print("dry run complete; no Drive writes performed.")
+        return
+
+    drive = get_drive()
+    folder_id = find_or_create_folder(drive, FOLDER_NAME)
+    print(f"folder '{FOLDER_NAME}' -> {folder_id}")
+
+    entries = []
+    for slug in slugs:
+        title, md = build_markdown(slug)
+        name = doc_name_for(slug, title)
+        fid, action = upsert_doc(drive, folder_id, name, md)
+        print(f"  {action}: {name} -> {fid}")
+        entries.append({
+            "title": title,
+            "file_id": fid,
+            "site_url": f"{SITE_BASE_URL}/pages/{slug}.html",
+        })
+
+    # Always rebuild the index doc last (so it has all fresh file ids)
+    idx_md = build_index_markdown(entries)
+    idx_id, idx_action = upsert_doc(drive, folder_id, INDEX_DOC_NAME, idx_md)
+    print(f"  {idx_action}: {INDEX_DOC_NAME} -> {idx_id}")
+
+    print(f"\nDone. {len(entries)} page Docs + 1 index in folder '{FOLDER_NAME}'.")
+    print(f"Folder: https://drive.google.com/drive/folders/{folder_id}")
+
+
+if __name__ == "__main__":
+    main()
