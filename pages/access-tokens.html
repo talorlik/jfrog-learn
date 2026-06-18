@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Access tokens & permissions — JFrog Learn</title>
+<meta name="description" content="How JFrog identity works: access tokens (scoped, revocable), users, groups, and permission targets that grant fine-grained access to repos, builds, and release bundles." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/style.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2340b14e'/%3E%3Cpath d='M9 21V11l7 4 7-4v10' fill='none' stroke='%230f1410' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E" />
+<script>window.__BASE='../';</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<aside class="sidebar" id="sidebar"></aside>
+
+<div id="onThisPage" hidden>
+  <p class="nav-group">On this page</p>
+  <a href="#tokens" class="nav-link">Access tokens</a>
+  <a href="#types" class="nav-link">Token scopes</a>
+  <a href="#create" class="nav-link">Creating a token</a>
+  <a href="#model" class="nav-link">Users, groups, targets</a>
+  <a href="#targets" class="nav-link">Permission targets</a>
+  <a href="#howto" class="nav-link">Set up permissions</a>
+</div>
+
+<button class="menu-btn" id="menuBtn" aria-label="Open navigation"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+<div class="scrim" id="scrim"></div>
+
+<main id="main">
+  <button class="theme-toggle" data-theme-toggle aria-label="Switch theme"></button>
+
+  <header class="page-head">
+    <nav class="breadcrumb"><a href="../index.html">Home</a><span class="sep">/</span><span>Access tokens & permissions</span></nav>
+    <div class="page-badges"><span class="lvl lvl-art">Platform</span><span class="lvl lvl-xray">Security</span><span class="lvl lvl-lab">How-to</span></div>
+    <h1>Access tokens &amp; permissions</h1>
+    <p class="lede">Authentication answers “who are you?”; authorization answers “what may you touch?” JFrog uses access tokens for the first and a Users → Groups → Permission Targets hierarchy for the second. Get this model right and everything else — the REST API, Frogbot, CI — falls into place.</p>
+  </header>
+
+
+  <section id="tokens" class="section">
+    <span class="kicker kicker-art">Concept</span>
+    <h2>Access tokens — the modern way to authenticate</h2>
+    <p class="prose">An <strong>access token</strong> is a signed credential that identifies you (or a service) to the JFrog Platform. Unlike a password, a token is <em>scoped</em> (it can be limited to specific resources), <em>revocable</em> (kill it without changing your password), and <em>expirable</em> (it can auto-die after a set time). That makes tokens the right choice for CI jobs, the REST API, Frogbot, and IDE plugins. <a href="https://jfrog.com/help/r/jfrog-platform-administration-documentation/access-tokens" target="_blank" rel="noopener">JFrog — Access Tokens</a>.</p>
+    <ul class="feature-list">
+      <li><b>No password exposure.</b> A leaked token can be revoked in isolation; your account password is never embedded in scripts.</li>
+      <li><b>Scoped to least privilege.</b> Grant a token only the access a given job actually needs.</li>
+      <li><b>Sent as a Bearer header.</b> Every authenticated REST call uses <code>Authorization: Bearer &lt;token&gt;</code> (see the <a href="rest-api.html">REST API</a> page).</li>
+    </ul>
+  </section>
+
+  <section id="types" class="section">
+    <span class="kicker">Scopes</span>
+    <h2>Token scopes: user, admin, and custom</h2>
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Scope</th><th>What it grants</th><th>Use for</th></tr></thead>
+        <tbody>
+          <tr><td><b>User</b></td><td>The same permissions the named user already has (inherits their group memberships and permission targets).</td><td>A token that acts “as me” for everyday automation.</td></tr>
+          <tr><td><b>Admin</b></td><td>Full administrative access to the platform.</td><td>Platform bootstrap/IaC only — guard it carefully.</td></tr>
+          <tr><td><b>Custom / scoped</b></td><td>Exactly the resource scopes you specify (e.g. read on one repo).</td><td>Least-privilege service tokens for a single job.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-tip">
+      <p class="callout-title">Default to least privilege</p>
+      <p>Reach for a <b>custom-scoped</b> token tied to a service identity before an admin token. If a custom token leaks, the blast radius is one repo, not your whole platform.</p>
+    </div>
+  </section>
+
+  <section id="create" class="section">
+    <span class="kicker kicker-lab">How-to</span>
+    <h2>Creating an access token — three ways</h2>
+    <h3 class="subhead">1. From the UI</h3>
+    <ol class="steps">
+      <li><b>Open token management.</b> Administration → User Management → <b>Access Tokens</b> → <b>Generate Token</b>.</li>
+      <li><b>Choose the scope.</b> Pick the user/identity, set an expiry, and (optionally) restrict the scope.</li>
+      <li><b>Copy it once.</b> The token value is shown a single time — store it in a secret manager immediately.</li>
+    </ol>
+    <h3 class="subhead">2. With the JFrog CLI</h3>
+    <p class="code-label">Create a token (alias <code>jf atc</code>)</p>
+    <div class="codeblock"><code>jf access-token-create --expiry=3600
+<span class="cm"># scope it to a specific user, or add --groups / --scope</span>
+jf atc --groups=ci-bots --expiry=86400</code></div>
+    <h3 class="subhead">3. Over the REST API</h3>
+    <p class="code-label">POST to the tokens endpoint</p>
+    <div class="codeblock"><code>curl -XPOST -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  https://yourname.jfrog.io/access/api/v1/tokens \
+  -d '{
+    "subject": "ci-bot",
+    "scope": "applied-permissions/groups:ci-bots",
+    "expires_in": 86400
+  }'</code></div>
+    <p class="prose muted">Sources: <a href="https://jfrog.com/help/r/jfrog-platform-administration-documentation/access-tokens" target="_blank" rel="noopener">JFrog — Access Tokens</a>, <a href="https://jfrog.com/help/r/jfrog-cli/access-tokens" target="_blank" rel="noopener">JFrog CLI — Access Tokens</a>.</p>
+  </section>
+
+  <section id="model" class="section">
+    <span class="kicker kicker-art">Model</span>
+    <h2>The authorization model: Users → Groups → Permission Targets</h2>
+    <p class="prose">JFrog never grants permissions to a user directly on a repo. Instead, permissions flow through a three-layer hierarchy. Understanding it is the key to keeping access manageable as your platform grows. <a href="https://jfrog.com/help/r/jfrog-platform-administration-documentation/permissions" target="_blank" rel="noopener">JFrog — Permissions</a>.</p>
+    <figure class="flow" aria-label="Permission hierarchy">
+      <div class="flow-row">
+        <div class="flow-step flow-art"><span class="flow-step-n">1</span><b>Users</b><small>people &amp; service identities</small></div>
+        <span class="flow-conn">→ belong to →</span>
+        <div class="flow-step flow-art"><span class="flow-step-n">2</span><b>Groups</b><small>roles, e.g. ci-bots, devs</small></div>
+        <span class="flow-conn">→ assigned in →</span>
+        <div class="flow-step flow-xray"><span class="flow-step-n">3</span><b>Permission targets</b><small>access to repos/builds</small></div>
+      </div>
+      <figcaption>Assign users to <b>groups</b> (by role), then grant <b>groups</b> access in <b>permission targets</b>. New hires just join a group and inherit the right access — no per-user wiring. <a href="https://jfrog.com/help/r/jfrog-platform-administration-documentation/permissions" target="_blank" rel="noopener">JFrog — Permissions</a>.</figcaption>
+    </figure>
+  </section>
+
+  <section id="targets" class="section">
+    <span class="kicker kicker-x">Authorization</span>
+    <h2>Permission targets — fine-grained access</h2>
+    <p class="prose">A <strong>permission target</strong> binds a set of resources (repositories, builds, or release bundles) to the actions a user/group may perform on them. Actions include <strong>read, write/deploy, delete, manage, annotate</strong> (set properties), and <strong>cache</strong> management. You can target specific repos or use wildcards.</p>
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Element</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><b>Resource scope</b></td><td>Which repos/builds/release-bundles this target covers.</td></tr>
+          <tr><td><code>ANY</code></td><td>Wildcard — every repository.</td></tr>
+          <tr><td><code>ANY LOCAL</code></td><td>Every <span class="pill pill-local">local</span> repository.</td></tr>
+          <tr><td><code>ANY REMOTE</code></td><td>Every <span class="pill pill-remote">remote</span> repository.</td></tr>
+          <tr><td><b>Actions</b></td><td>read / deploy(write) / delete / manage / annotate / cache, granted per user or group.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-q">
+      <p class="callout-title">Read vs. deploy vs. manage</p>
+      <p><b>Read</b> = pull/resolve artifacts. <b>Deploy</b> = push new artifacts. <b>Delete</b> = remove them. <b>Manage</b> = edit the permission target itself (grant access to others) — the most powerful, hand it out sparingly.</p>
+    </div>
+    <p class="prose muted">Sources: <a href="https://jfrog.com/help/r/self-managed-pro-pro-x-start-guide/set-up-users-groups-and-permissions" target="_blank" rel="noopener">JFrog — Set up users, groups &amp; permissions</a>, <a href="https://jfrog.com/help/r/jfrog-platform-administration-documentation/permissions" target="_blank" rel="noopener">JFrog — Permissions</a>.</p>
+  </section>
+
+  <section id="howto" class="section">
+    <span class="kicker kicker-lab">How-to</span>
+    <h2>Wiring up a least-privilege setup</h2>
+    <ol class="steps">
+      <li><b>Create role groups.</b> Administration → User Management → Groups → add e.g. <code>developers</code>, <code>ci-bots</code>, <code>release-managers</code>.</li>
+      <li><b>Add users to groups.</b> Put each person/service identity in the group(s) matching their role.</li>
+      <li><b>Create permission targets.</b> Administration → User Management → Permissions → add a target; pick the repos (or <code>ANY LOCAL</code>) and grant each group only the actions it needs.</li>
+      <li><b>Mint scoped tokens.</b> For automation, create custom-scoped tokens bound to the <code>ci-bots</code> group rather than handing out personal tokens.</li>
+      <li><b>Review &amp; rotate.</b> Periodically audit targets, expire stale tokens, and confirm no group has more than it needs.</li>
+    </ol>
+    <div class="callout callout-tip">
+      <p class="callout-title">Tie it together</p>
+      <p>This model powers everything else on this site: the token you mint here is the <code>Bearer</code> in the <a href="rest-api.html">REST API</a> page, the <code>JF_ACCESS_TOKEN</code> for <a href="frogbot.html">Frogbot</a>, and the credential a <a href="pipelines.html">Pipelines</a> integration stores.</p>
+    </div>
+  </section>
+
+
+  <nav class="page-nav" aria-label="Page navigation">
+    <a href="pipelines.html"><span class="pn-dir">← Previous</span><span class="pn-title">JFrog Pipelines</span></a>
+    <a class="pn-next" href="kubernetes-helm.html"><span class="pn-dir">Next →</span><span class="pn-title">Kubernetes / Helm setup</span></a>
+  </nav>
+
+  <footer class="footer">
+    <p>All facts link to primary JFrog documentation, current as of June 2026. Product names belong to JFrog Ltd.</p>
+  </footer>
+</main>
+
+<div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true" aria-label="Search">
+  <div class="search-box">
+    <div class="search-input-row">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="Search concepts, commands, CLI…" autocomplete="off" spellcheck="false" />
+      <span class="search-esc">esc</span>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+    <div class="search-foot">
+      <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span><span><kbd>&crarr;</kbd> open</span><span><kbd>/</kbd> or <kbd>&#8984;K</kbd> to search</span>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/app.js"></script>
+</body>
+</html>

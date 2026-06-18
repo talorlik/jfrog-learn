@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Release Bundles & Distribution — JFrog Learn</title>
+<meta name="description" content="Immutable, signed collections of artifacts and how JFrog Distribution ships them to edge nodes and air-gapped sites with verifiable provenance." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/style.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2340b14e'/%3E%3Cpath d='M9 21V11l7 4 7-4v10' fill='none' stroke='%230f1410' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E" />
+<script>window.__BASE='../';</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<aside class="sidebar" id="sidebar"></aside>
+
+<div id="onThisPage" hidden>
+  <p class="nav-group">On this page</p>
+  <a href="#problem" class="nav-link">The problem</a>
+  <a href="#bundle" class="nav-link">What a Release Bundle is</a>
+  <a href="#lifecycle" class="nav-link">Bundle lifecycle</a>
+  <a href="#distribution" class="nav-link">Distribution & edge nodes</a>
+  <a href="#cli" class="nav-link">Create & distribute (CLI)</a>
+  <a href="#vs" class="nav-link">Bundle vs. promotion</a>
+</div>
+
+<button class="menu-btn" id="menuBtn" aria-label="Open navigation"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+<div class="scrim" id="scrim"></div>
+
+<main id="main">
+  <button class="theme-toggle" data-theme-toggle aria-label="Switch theme"></button>
+
+  <header class="page-head">
+    <nav class="breadcrumb"><a href="../index.html">Home</a><span class="sep">/</span><span>Release Bundles & Distribution</span></nav>
+    <div class="page-badges"><span class="lvl lvl-art">Artifactory</span><span class="lvl lvl-xray">Supply chain</span><span class="lvl">Deep-dive</span></div>
+    <h1>Release Bundles &amp; Distribution</h1>
+    <p class="lede">A Release Bundle is a sealed, signed manifest of exactly which artifacts make up a release. JFrog Distribution then ships that bundle out to edge nodes and remote sites — so what arrives is provably identical to what you signed.</p>
+  </header>
+
+
+  <section id="problem" class="section">
+    <span class="kicker kicker-art">Concept</span>
+    <h2>The problem Release Bundles solve</h2>
+    <p class="prose">Promotion moves binaries <em>inside</em> one platform. But shipping a release <em>out</em> — to a customer site, an edge location, or an air-gapped network — raises new questions: which exact files belong to "v2.4.0"? Were any swapped in transit? Can the receiving side prove provenance? A loose folder of artifacts answers none of these.</p>
+    <p class="prose">A <strong>Release Bundle</strong> is the answer: an <em>immutable, signed</em> specification of the precise set of artifacts that constitute a release, with a checksum-verified manifest. <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/release-lifecycle-management" target="_blank" rel="noopener">JFrog — Release Lifecycle Management</a>.</p>
+  </section>
+
+  <section id="bundle" class="section">
+    <span class="kicker kicker-x">Definition</span>
+    <h2>What's inside a Release Bundle</h2>
+    <ul class="feature-list">
+      <li><b>A curated artifact set.</b> You select artifacts (by AQL query, build, or path) that make up the release. The bundle records each one's checksum.</li>
+      <li><b>Immutability.</b> Once created, the bundle's contents can't change. A new release means a new bundle version.</li>
+      <li><b>Cryptographic signing.</b> The bundle manifest is signed with a GPG key, so any recipient can verify it wasn't tampered with.</li>
+      <li><b>Provenance metadata.</b> The bundle carries the source build-info and (optionally) Xray scan results, giving the receiver evidence of what was vetted.</li>
+    </ul>
+    <div class="analogy analogy-x">
+      <span class="analogy-icon" aria-hidden="true">📜</span>
+      <div>
+        <p class="analogy-title">One-sentence analogy</p>
+        <p>A Release Bundle is a <strong>tamper-evident shipping manifest with a wax seal</strong>. It lists every item in the crate, and the seal proves nobody opened it between the warehouse and the customer's loading dock.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="lifecycle" class="section">
+    <span class="kicker">Flow</span>
+    <h2>The bundle lifecycle</h2>
+    <figure class="flow" aria-label="Release bundle lifecycle">
+      <div class="flow-row">
+        <div class="flow-step flow-art"><span class="flow-step-n">1</span><b>Create</b><small>select artifacts → sign</small></div>
+        <span class="flow-conn">→</span>
+        <div class="flow-step flow-art"><span class="flow-step-n">2</span><b>Sign</b><small>GPG-signed manifest</small></div>
+        <span class="flow-conn">→</span>
+        <div class="flow-step flow-xray"><span class="flow-step-n">3</span><b>Distribute</b><small>push to edge nodes</small></div>
+        <span class="flow-conn">→</span>
+        <div class="flow-step"><span class="flow-step-n">4</span><b>Verify &amp; consume</b><small>checksum-checked on arrival</small></div>
+      </div>
+      <figcaption>The bundle is created and sealed once, then distributed to one or many targets. Each target verifies signatures and checksums before exposing the artifacts. <a href="https://jfrog.com/help/r/jfrog-distribution-documentation/distributing-release-bundles" target="_blank" rel="noopener">JFrog — Distributing Release Bundles</a>.</figcaption>
+    </figure>
+  </section>
+
+  <section id="distribution" class="section">
+    <span class="kicker kicker-x">Distribution</span>
+    <h2>Distribution &amp; edge nodes</h2>
+    <p class="prose"><strong>JFrog Distribution</strong> is the service that takes a signed Release Bundle and delivers it to <strong>edge nodes</strong> — lightweight Artifactory instances positioned close to consumers (a factory floor, a CDN POP, an air-gapped enclave). Edge nodes are read-only consumption points: they receive distributed bundles but aren't general-purpose repositories. <a href="https://jfrog.com/help/r/jfrog-distribution-documentation/jfrog-distribution" target="_blank" rel="noopener">JFrog Distribution docs</a>.</p>
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Component</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><b>Distribution service</b></td><td>Orchestrates creating, signing, and shipping bundles to targets.</td></tr>
+          <tr><td><b>Edge node</b></td><td>A consumption-only Artifactory at the destination that hosts distributed bundles.</td></tr>
+          <tr><td><b>Distribution target</b></td><td>The rule selecting which edge node(s) a given bundle goes to.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-tip">
+      <p class="callout-title">Why edge nodes matter</p>
+      <p>Consumers at the edge pull from a nearby node — fast and resilient — while you keep a single signed source of truth centrally. Air-gapped sites receive the bundle as a verifiable package rather than opening a live connection to your main platform.</p>
+    </div>
+  </section>
+
+  <section id="cli" class="section">
+    <span class="kicker kicker-lab">CLI</span>
+    <h2>Create and distribute a bundle (CLI)</h2>
+    <p class="prose">The JFrog CLI exposes release-bundle commands under <code>jf rbc</code> / <code>jf rbu</code> (create/update) and <code>jf rbd</code> (distribute), depending on the lifecycle version. The conceptual flow: <a href="https://jfrog.com/help/r/jfrog-cli/release-bundles" target="_blank" rel="noopener">JFrog CLI — Release Bundles</a>.</p>
+    <p class="code-label">Create a signed bundle from a spec, then distribute</p>
+    <div class="codeblock"><code><span class="cm"># 1. Create release bundle v2.4.0 from an artifact spec</span>
+jf release-bundle-create my-app 2.4.0 \
+  --spec=release-spec.json --signing-key=my-gpg-key
+
+<span class="cm"># 2. Distribute it to the configured edge nodes</span>
+jf release-bundle-distribute my-app 2.4.0 \
+  --site="edge-eu-*"</code></code></div>
+    <p class="prose muted">The spec selects artifacts (by AQL/path); the signing key seals the manifest; the distribute step fans it out to matching edge sites. Exact subcommands vary by Release Lifecycle Management version — check the linked CLI reference for your platform.</p>
+  </section>
+
+  <section id="vs" class="section">
+    <span class="kicker">Compare</span>
+    <h2>Release Bundle vs. build promotion</h2>
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Aspect</th><th>Build promotion</th><th>Release Bundle + Distribution</th></tr></thead>
+        <tbody>
+          <tr><td>Scope</td><td>Within one platform</td><td>Across platforms / out to edges</td></tr>
+          <tr><td>Mutability</td><td>Status changes over time</td><td>Immutable once signed</td></tr>
+          <tr><td>Integrity proof</td><td>Checksum tracking</td><td>GPG-signed manifest</td></tr>
+          <tr><td>Primary goal</td><td>Advance maturity stage</td><td>Ship a sealed release safely</td></tr>
+          <tr><td>Air-gap friendly</td><td><b class="no">No</b></td><td><b class="yes">Yes</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose muted">They compose: promote a build to <code>release-local</code> with an Xray gate (see <a href="build-promotion.html">Build promotion</a>), then bundle and distribute that vetted set to the edge.</p>
+  </section>
+
+
+  <nav class="page-nav" aria-label="Page navigation">
+    <a href="build-promotion.html"><span class="pn-dir">← Previous</span><span class="pn-title">Build promotion</span></a>
+    <a class="pn-next" href="rest-api.html"><span class="pn-dir">Next →</span><span class="pn-title">Artifactory REST API</span></a>
+  </nav>
+
+  <footer class="footer">
+    <p>All facts link to primary JFrog documentation, current as of June 2026. Product names belong to JFrog Ltd.</p>
+  </footer>
+</main>
+
+<div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true" aria-label="Search">
+  <div class="search-box">
+    <div class="search-input-row">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="Search concepts, commands, CLI…" autocomplete="off" spellcheck="false" />
+      <span class="search-esc">esc</span>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+    <div class="search-foot">
+      <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span><span><kbd>&crarr;</kbd> open</span><span><kbd>/</kbd> or <kbd>&#8984;K</kbd> to search</span>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Build promotion — JFrog Learn</title>
+<meta name="description" content="Move a build through dev to staging to release without rebuilding. build-info, status changes, copy vs move, and the CLI and REST commands that do it." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/style.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2340b14e'/%3E%3Cpath d='M9 21V11l7 4 7-4v10' fill='none' stroke='%230f1410' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E" />
+<script>window.__BASE='../';</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<aside class="sidebar" id="sidebar"></aside>
+
+<div id="onThisPage" hidden>
+  <p class="nav-group">On this page</p>
+  <a href="#what" class="nav-link">What promotion is</a>
+  <a href="#buildinfo" class="nav-link">build-info & identity</a>
+  <a href="#copymove" class="nav-link">Copy vs. move</a>
+  <a href="#cli" class="nav-link">Promote via CLI</a>
+  <a href="#rest" class="nav-link">Promote via REST</a>
+  <a href="#pattern" class="nav-link">Repo layout pattern</a>
+</div>
+
+<button class="menu-btn" id="menuBtn" aria-label="Open navigation"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+<div class="scrim" id="scrim"></div>
+
+<main id="main">
+  <button class="theme-toggle" data-theme-toggle aria-label="Switch theme"></button>
+
+  <header class="page-head">
+    <nav class="breadcrumb"><a href="../index.html">Home</a><span class="sep">/</span><span>Build promotion</span></nav>
+    <div class="page-badges"><span class="lvl lvl-art">Artifactory</span><span class="lvl">Lifecycle</span><span class="lvl lvl-lab">CLI + REST</span></div>
+    <h1>Build promotion in practice</h1>
+    <p class="lede">Promotion is how a binary graduates from dev to staging to release without ever being rebuilt — so what you tested is byte-for-byte what ships. It hinges on one idea: build-info that tracks artifacts by checksum, wherever they move.</p>
+  </header>
+
+
+  <section id="what" class="section">
+    <span class="kicker kicker-art">Concept</span>
+    <h2>What build promotion actually is</h2>
+    <p class="prose"><strong>Build promotion changes a build's status to a more mature stage</strong> — for example <code>dev</code> → <code>staging</code> → <code>released</code> — and can optionally move or copy the build's artifacts (and their dependencies) into a target repository and set properties on them. The crucial part: <em>no rebuild happens</em>. The same binary that passed your tests is the one that advances. <a href="https://jfrog.com/help/r/how-does-build-promotion-work/artifactory-how-does-build-promotion-work" target="_blank" rel="noopener">JFrog — How build promotion works</a>.</p>
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">🎟️</span>
+      <div>
+        <p class="analogy-title">One-sentence analogy</p>
+        <p>Promotion is a <strong>stamp on a passport</strong>, not a new passport. The traveller (your binary) is unchanged; it just earns a visa for the next country (stage). Because it's the same passport, you have proof the thing entering production is exactly the thing you vetted.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="buildinfo" class="section">
+    <span class="kicker kicker-art">Foundation</span>
+    <h2>build-info and artifact identity</h2>
+    <p class="prose">Promotion only works because Artifactory records <strong>build-info</strong> — metadata capturing which artifacts a build produced, which dependencies it consumed, and the environment it ran in. Artifacts are tracked by their <strong>checksum (SHA-1/SHA-256)</strong> plus the <code>build.name</code> and <code>build.number</code> properties, so Artifactory knows an artifact's identity no matter what repository it currently sits in. <a href="https://docs.jfrog.com/integrations/docs/manage-builds" target="_blank" rel="noopener">JFrog — Manage builds</a>, <a href="https://docs.jfrog.com/artifactory/docs/build-integration" target="_blank" rel="noopener">Build integration</a>.</p>
+    <ul class="feature-list">
+      <li><b>Location-agnostic.</b> Because identity is the checksum + build coordinates, moving an artifact between repos doesn't lose its lineage.</li>
+      <li><b>Full traceability.</b> From a release artifact you can walk back to the exact build, its dependencies, and its source commit.</li>
+      <li><b>Required first step.</b> Your CI must publish build-info (the JFrog CLI does this automatically on <code>jf rt build-publish</code>) before you can promote that build.</li>
+    </ul>
+  </section>
+
+  <section id="copymove" class="section">
+    <span class="kicker">Choice</span>
+    <h2>Copy vs. move — and properties</h2>
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Option</th><th>Effect</th><th>When to use</th></tr></thead>
+        <tbody>
+          <tr><td><code>--copy=true</code></td><td>Duplicates artifacts into the target repo; originals stay in the source.</td><td>You want the artifact in both the staging and release repos (common).</td></tr>
+          <tr><td><code>--copy=false</code> (move)</td><td>Relocates artifacts to the target; removes them from the source.</td><td>Strict single-home layouts where each stage owns its artifacts exclusively.</td></tr>
+          <tr><td>Set properties</td><td>Stamps key/value properties on promoted artifacts (e.g. <code>stage=released</code>).</td><td>Driving downstream queries, watches, or cleanup policies.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-tip">
+      <p class="callout-title">Default to copy</p>
+      <p>Copying keeps a clear audit trail at each stage and avoids surprises if a later gate fails. Use move only when you deliberately want a single physical home per maturity level.</p>
+    </div>
+  </section>
+
+  <section id="cli" class="section">
+    <span class="kicker kicker-lab">CLI</span>
+    <h2>Promote a build with the JFrog CLI</h2>
+    <p class="prose">The command is <code>jf rt build-promote</code> (alias <code>jf rt bpr</code>). You name the build, its number, and the target repo, plus options for copy/move and the new status. <a href="https://jfrog.com/help/r/artifactory-rest-apis/build-promotion" target="_blank" rel="noopener">JFrog — Build promotion</a>.</p>
+    <p class="code-label">Promote build "TestBuild" #49 to a release repo</p>
+    <div class="codeblock"><code>jf rt build-promote \
+  --status=Released \
+  --copy=true \
+  --source-repo=staging-local \
+  TestBuild 49 release-local</code></div>
+    <p class="prose muted">This copies build <code>TestBuild/49</code>'s artifacts from <code>staging-local</code> into <code>release-local</code> and marks the build status <code>Released</code>. Drop <code>--copy=true</code> (or set it false) to move instead.</p>
+    <div class="callout callout-q">
+      <p class="callout-title">Prerequisite</p>
+      <p>The build must already be published to Artifactory: <code>jf rt build-publish TestBuild 49</code> after collecting build-info during your CI run. Only then is there a build to promote.</p>
+    </div>
+  </section>
+
+  <section id="rest" class="section">
+    <span class="kicker kicker-lab">REST</span>
+    <h2>Promote a build via the REST API</h2>
+    <p class="prose">CI systems that don't use the CLI can call the promotion endpoint directly. <a href="https://jfrog.com/help/r/artifactory-rest-apis/build-promotion" target="_blank" rel="noopener">JFrog — Build Promotion REST API</a>.</p>
+    <p class="code-label">POST to the build-promote endpoint</p>
+    <div class="codeblock"><code>POST /artifactory/api/build/promote/TestBuild/49
+Authorization: Bearer &lt;access-token&gt;
+Content-Type: application/json
+
+{
+  "status": "Released",
+  "sourceRepo": "staging-local",
+  "targetRepo": "release-local",
+  "copy": true,
+  "properties": { "stage": ["released"] }
+}</code></div>
+    <p class="prose muted">The path carries the build name and number; the JSON body carries everything else. See the <a href="rest-api.html">Artifactory REST API</a> page for auth details and the <code>jf api</code> shortcut.</p>
+  </section>
+
+  <section id="pattern" class="section">
+    <span class="kicker">Pattern</span>
+    <h2>The repository layout promotion assumes</h2>
+    <figure class="flow" aria-label="Promotion across maturity repos">
+      <div class="flow-row">
+        <div class="flow-step flow-art"><span class="flow-step-n">1</span><b>dev-local</b><small>CI publishes here</small></div>
+        <span class="flow-conn">→ promote →</span>
+        <div class="flow-step flow-art"><span class="flow-step-n">2</span><b>staging-local</b><small>passes tests + Xray</small></div>
+        <span class="flow-conn">→ promote →</span>
+        <div class="flow-step flow-art"><span class="flow-step-n">3</span><b>release-local</b><small>production-approved</small></div>
+      </div>
+      <figcaption>Each arrow is a <code>build-promote</code> that advances status and (optionally) copies the same binary forward. An Xray <b>Watch</b> on each repo can gate the move. <a href="https://jfrog.com/help/r/get-started-with-the-jfrog-platform/onboarding-best-practices-jfrog-artifactory" target="_blank" rel="noopener">JFrog onboarding best practices</a>.</figcaption>
+    </figure>
+    <div class="callout callout-tip">
+      <p class="callout-title">Tie it back to Xray</p>
+      <p>The power move: a <a href="fundamentals.html#policies">Policy + Watch</a> on <code>staging-local</code> blocks promotion to <code>release-local</code> if a High/Critical CVE with an available fix is present. Promotion becomes your enforced quality gate, not a manual courtesy.</p>
+    </div>
+  </section>
+
+
+  <nav class="page-nav" aria-label="Page navigation">
+    <a href="replication-federation.html"><span class="pn-dir">← Previous</span><span class="pn-title">Replication & Federation</span></a>
+    <a class="pn-next" href="release-bundles.html"><span class="pn-dir">Next →</span><span class="pn-title">Release Bundles & Distribution</span></a>
+  </nav>
+
+  <footer class="footer">
+    <p>All facts link to primary JFrog documentation, current as of June 2026. Product names belong to JFrog Ltd.</p>
+  </footer>
+</main>
+
+<div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true" aria-label="Search">
+  <div class="search-box">
+    <div class="search-input-row">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="Search concepts, commands, CLI…" autocomplete="off" spellcheck="false" />
+      <span class="search-esc">esc</span>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+    <div class="search-foot">
+      <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span><span><kbd>&crarr;</kbd> open</span><span><kbd>/</kbd> or <kbd>&#8984;K</kbd> to search</span>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/app.js"></script>
+</body>
+</html>

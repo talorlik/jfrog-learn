@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Replication & Federation — JFrog Learn</title>
+<meta name="description" content="How JFrog keeps artifacts in sync across data centers and JPDs: push/pull replication versus federated repositories, and when to use each." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/style.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2340b14e'/%3E%3Cpath d='M9 21V11l7 4 7-4v10' fill='none' stroke='%230f1410' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E" />
+<script>window.__BASE='../';</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<aside class="sidebar" id="sidebar"></aside>
+
+<div id="onThisPage" hidden>
+  <p class="nav-group">On this page</p>
+  <a href="#why" class="nav-link">Why sync at all</a>
+  <a href="#replication" class="nav-link">Replication</a>
+  <a href="#modes" class="nav-link">Push vs. pull</a>
+  <a href="#federation" class="nav-link">Federated repositories</a>
+  <a href="#compare" class="nav-link">Which to choose</a>
+  <a href="#howto" class="nav-link">How to set it up</a>
+</div>
+
+<button class="menu-btn" id="menuBtn" aria-label="Open navigation"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+<div class="scrim" id="scrim"></div>
+
+<main id="main">
+  <button class="theme-toggle" data-theme-toggle aria-label="Switch theme"></button>
+
+  <header class="page-head">
+    <nav class="breadcrumb"><a href="../index.html">Home</a><span class="sep">/</span><span>Replication & Federation</span></nav>
+    <div class="page-badges"><span class="lvl lvl-art">Artifactory</span><span class="lvl">Multi-site</span><span class="lvl">Deep-dive</span></div>
+    <h1>Replication &amp; Federation</h1>
+    <p class="lede">Once you run JFrog in more than one location, you need copies of your artifacts to stay in sync. JFrog gives you two mechanisms — classic replication and federated repositories. They solve overlapping problems differently.</p>
+  </header>
+
+
+  <section id="why" class="section">
+    <span class="kicker kicker-art">Concept</span>
+    <h2>Why sync artifacts across sites at all?</h2>
+    <p class="prose">A single Artifactory instance is one point in the world. The moment you have teams in London and Tokyo, a CI farm in another region, or a disaster-recovery site, builds in one place need the same binaries that live in another. Pulling everything across an ocean on every build is slow and fragile.</p>
+    <div class="cards">
+      <div class="card"><span class="card-num">01</span><h3>Latency</h3><p>Developers and CI resolve dependencies from a local copy instead of crossing continents on every download.</p></div>
+      <div class="card"><span class="card-num">02</span><h3>Availability</h3><p>If one site or its network goes down, the others still have their own copy and keep building.</p></div>
+      <div class="card"><span class="card-num">03</span><h3>Disaster recovery</h3><p>A synced standby instance lets you fail over with the artifacts already in place.</p></div>
+    </div>
+    <p class="prose muted">JFrog offers two answers: <strong>replication</strong> (an older, one-directional copy job) and <strong>federation</strong> (newer, automatic, multi-directional mirroring). <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/repository-replication" target="_blank" rel="noopener">JFrog — Repository Replication</a>.</p>
+  </section>
+
+  <section id="replication" class="section">
+    <span class="kicker kicker-art">Replication</span>
+    <h2>Replication — copying repositories between instances</h2>
+    <p class="prose"><strong>Replication</strong> synchronizes the contents of a repository on one Artifactory instance with a repository on another. It runs on a <em>schedule</em> (cron) or can be triggered as an event, and it copies artifacts plus their properties. Replication works on <span class="pill pill-local">local</span> and <span class="pill pill-remote">remote</span> repositories. <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/repository-replication" target="_blank" rel="noopener">Source</a>.</p>
+    <div class="callout callout-q">
+      <p class="callout-title">Key trait: it's one-directional</p>
+      <p>A single replication has a clear source and target. Site A pushes to Site B, or Site B pulls from Site A — but one replication relationship only flows one way. To mirror both directions you configure two separate jobs.</p>
+    </div>
+  </section>
+
+  <section id="modes" class="section">
+    <span class="kicker kicker-art">Replication</span>
+    <h2>Push vs. pull replication</h2>
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Mode</th><th>Who initiates</th><th>How it works</th><th>Typical use</th></tr></thead>
+        <tbody>
+          <tr><td><b>Push</b></td><td>The <em>source</em> instance</td><td>The source repo pushes new/changed artifacts out to a target repo on a remote instance.</td><td>A central build site fanning releases out to regional mirrors.</td></tr>
+          <tr><td><b>Pull</b></td><td>The <em>target</em> instance</td><td>A <span class="pill pill-remote">remote</span> repo's "replication" pulls content from its upstream Artifactory on a schedule.</td><td>An edge/DR site keeping itself current from a master.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure class="flow" aria-label="Push vs pull replication">
+      <div class="flow-row">
+        <div class="flow-step flow-art"><span class="flow-step-n">A</span><b>Source JPD</b><small>has the artifacts</small></div>
+        <span class="flow-conn">→ push →</span>
+        <div class="flow-step"><span class="flow-step-n">B</span><b>Target JPD</b><small>receives a copy</small></div>
+      </div>
+      <div class="flow-row flow-row-down"><span class="flow-down">— or, reversed initiator —</span></div>
+      <div class="flow-row">
+        <div class="flow-step"><span class="flow-step-n">A</span><b>Source JPD</b><small>has the artifacts</small></div>
+        <span class="flow-conn">← pull ←</span>
+        <div class="flow-step flow-art"><span class="flow-step-n">B</span><b>Target JPD</b><small>fetches the copy</small></div>
+      </div>
+      <figcaption>Push and pull move data the same direction (A → B); they differ only in <em>which side starts the transfer</em>. Push is good when the source can reach the target; pull is good when only the target can reach out (e.g. firewalled edge). <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/repository-replication" target="_blank" rel="noopener">JFrog Replication</a>.</figcaption>
+    </figure>
+  </section>
+
+  <section id="federation" class="section">
+    <span class="kicker kicker-x">Federation</span>
+    <h2>Federated repositories — automatic multi-directional mirroring</h2>
+    <p class="prose">A <span class="pill pill-fed">Federated</span> repository behaves like a <span class="pill pill-local">local</span> repo, but it is bi-directionally mirrored across multiple <strong>members</strong> — up to 10 repositories living on different JFrog Platform Deployments (JPDs). Write to any member and the change propagates to all the others, automatically and asynchronously. <a href="https://docs.jfrog.com/artifactory/docs/federated-repositories" target="_blank" rel="noopener">JFrog — Federated Repositories</a>.</p>
+    <ul class="feature-list">
+      <li><b>Bi-directional by design.</b> Every member is both source and target — no manual two-way setup. Deploy to London, it appears in Tokyo, and vice-versa.</li>
+      <li><b>Async, queue-backed.</b> Changes are replicated through a persistent queue, so a temporary network blip doesn't lose data — it catches up when connectivity returns.</li>
+      <li><b>Configuration is synced too.</b> Repository configuration (not just artifacts) is kept aligned across members.</li>
+      <li><b>Up to 10 members.</b> A federation can span up to ten member repositories across JPDs.</li>
+      <li><b>Enterprise tier.</b> Federated repositories require an Enterprise X (or higher) subscription.</li>
+    </ul>
+    <div class="callout callout-tip">
+      <p class="callout-title">The mental shortcut</p>
+      <p><b>Replication = a copy job you schedule, one direction at a time.</b> <b>Federation = a self-healing cluster of mirror repos that stay in sync automatically, both ways.</b> Federation is the modern default for active-active multi-site; replication still fits one-way DR and edge-cache patterns.</p>
+    </div>
+  </section>
+
+  <section id="compare" class="section">
+    <span class="kicker">Decision</span>
+    <h2>Which one should you use?</h2>
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Dimension</th><th>Replication</th><th>Federated repos</th></tr></thead>
+        <tbody>
+          <tr><td>Direction</td><td>One-way per job</td><td>Multi-directional (all members)</td></tr>
+          <tr><td>Trigger</td><td>Scheduled / event</td><td>Automatic on every write</td></tr>
+          <tr><td>Members</td><td>Two endpoints per job</td><td>Up to 10 across JPDs</td></tr>
+          <tr><td>Config sync</td><td><b class="no">No</b> (artifacts &amp; properties)</td><td><b class="yes">Yes</b> (config too)</td></tr>
+          <tr><td>Resilience</td><td>Re-runs on schedule</td><td>Persistent queue, self-healing</td></tr>
+          <tr><td>License</td><td>Pro / Enterprise</td><td>Enterprise X+</td></tr>
+          <tr><td>Best for</td><td>DR standby, edge caches, one-way distribution</td><td>Active-active global teams, single source of truth</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose muted">Sources: <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/repository-replication" target="_blank" rel="noopener">JFrog Replication</a>, <a href="https://docs.jfrog.com/artifactory/docs/federated-repositories" target="_blank" rel="noopener">JFrog Federated Repositories</a>.</p>
+  </section>
+
+  <section id="howto" class="section">
+    <span class="kicker kicker-lab">How-to</span>
+    <h2>Setting each one up</h2>
+    <h3 class="subhead">Configure replication (UI)</h3>
+    <ol class="steps">
+      <li><b>Open the repo.</b> Administration → Repositories → select a local or remote repo → <b>Replications</b> tab.</li>
+      <li><b>Add a replication.</b> Provide the target instance URL, the target repository key, and credentials (use an access token).</li>
+      <li><b>Pick a schedule.</b> Set a cron expression (e.g. every hour) and choose whether to enable event-based replication for near-real-time push.</li>
+      <li><b>Save &amp; test.</b> Run it once manually and confirm artifacts land in the target.</li>
+    </ol>
+    <h3 class="subhead">Create a federated repository (UI)</h3>
+    <ol class="steps">
+      <li><b>Add repository → Federated.</b> Choose the package type, then create the repo on your first JPD.</li>
+      <li><b>Add members.</b> In the Federated configuration, add member URLs for the other JPDs (the platform must be aware of those JPDs via Mission Control / circle-of-trust).</li>
+      <li><b>Deploy anywhere.</b> Push an artifact to any member; verify it appears on the others within seconds.</li>
+    </ol>
+    <div class="callout callout-q">
+      <p class="callout-title">Tip for your labs</p>
+      <p>On the free single-instance tier you can't truly demonstrate multi-JPD federation — you need at least two deployments. You <em>can</em> still create the repo types and read the configuration screens to understand the model. For a real two-site test, stand up two self-hosted instances (see the Docker lab on the <a href="fundamentals.html">Fundamentals</a> page).</p>
+    </div>
+  </section>
+
+
+  <nav class="page-nav" aria-label="Page navigation">
+    <a href="fundamentals.html"><span class="pn-dir">← Previous</span><span class="pn-title">Fundamentals</span></a>
+    <a class="pn-next" href="build-promotion.html"><span class="pn-dir">Next →</span><span class="pn-title">Build promotion</span></a>
+  </nav>
+
+  <footer class="footer">
+    <p>All facts link to primary JFrog documentation, current as of June 2026. Product names belong to JFrog Ltd.</p>
+  </footer>
+</main>
+
+<div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true" aria-label="Search">
+  <div class="search-box">
+    <div class="search-input-row">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="Search concepts, commands, CLI…" autocomplete="off" spellcheck="false" />
+      <span class="search-esc">esc</span>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+    <div class="search-foot">
+      <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span><span><kbd>&crarr;</kbd> open</span><span><kbd>/</kbd> or <kbd>&#8984;K</kbd> to search</span>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/app.js"></script>
+</body>
+</html>
