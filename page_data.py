@@ -1031,3 +1031,71 @@ helm install my-release \\
 }
 _p["prev"], _p["next"] = chain(_p["file"])
 PAGE_LIST.append(_p)
+
+
+# =====================================================================
+# SEARCH METADATA (consumed by build_search_index.py + search.html)
+# =====================================================================
+
+# Sidebar group each page belongs to (mirrors NAV in assets/app.js).
+GROUPS = {
+    "index.html": "Overview",
+    "fundamentals.html": "Core concepts",
+    "replication-federation.html": "Core concepts",
+    "build-promotion.html": "Core concepts",
+    "release-bundles.html": "Distribution",
+    "rest-api.html": "Automation & security",
+    "frogbot.html": "Automation & security",
+    "pipelines.html": "Automation & security",
+    "access-tokens.html": "Automation & security",
+    "kubernetes-helm.html": "Platform ops",
+}
+
+# Fundamentals is authored as a static page (not in PAGE_LIST), so we
+# declare its section anchors/labels here for the section-level index.
+FUNDAMENTALS_SECTIONS = [
+    {"id": "problem", "label": "The problem it solves"},
+    {"id": "glossary", "label": "Vocabulary first"},
+    {"id": "artifactory", "label": "What Artifactory is"},
+    {"id": "repos", "label": "The 4 repository types"},
+    {"id": "architecture", "label": "How it fits together"},
+    {"id": "packages", "label": "Package types"},
+    {"id": "xray", "label": "What Xray is"},
+    {"id": "xray-how", "label": "How scanning works"},
+    {"id": "policies", "label": "Policies & Watches"},
+    {"id": "labs", "label": "Choose your track"},
+    {"id": "cli", "label": "CLI cheat sheet"},
+    {"id": "mental-model", "label": "Full mental model"},
+]
+
+# Curated cross-page "related topics" so a result set links the user to
+# connected material without re-searching. file -> list of related files.
+RELATED = {
+    "fundamentals.html": [
+        "access-tokens.html", "rest-api.html", "kubernetes-helm.html", "build-promotion.html",
+    ],
+    "replication-federation.html": [
+        "fundamentals.html", "release-bundles.html", "kubernetes-helm.html",
+    ],
+    "build-promotion.html": [
+        "release-bundles.html", "rest-api.html", "pipelines.html", "fundamentals.html",
+    ],
+    "release-bundles.html": [
+        "build-promotion.html", "replication-federation.html", "rest-api.html",
+    ],
+    "rest-api.html": [
+        "access-tokens.html", "build-promotion.html", "frogbot.html", "pipelines.html",
+    ],
+    "frogbot.html": [
+        "rest-api.html", "access-tokens.html", "pipelines.html", "fundamentals.html",
+    ],
+    "pipelines.html": [
+        "build-promotion.html", "rest-api.html", "frogbot.html", "access-tokens.html",
+    ],
+    "access-tokens.html": [
+        "rest-api.html", "frogbot.html", "kubernetes-helm.html", "pipelines.html",
+    ],
+    "kubernetes-helm.html": [
+        "access-tokens.html", "fundamentals.html", "replication-federation.html", "rest-api.html",
+    ],
+}

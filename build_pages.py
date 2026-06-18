@@ -62,7 +62,7 @@ SHELL = """<!DOCTYPE html>
     </div>
     <div class="search-results" id="searchResults"></div>
     <div class="search-foot">
-      <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span><span><kbd>&crarr;</kbd> open</span><span><kbd>/</kbd> or <kbd>&#8984;K</kbd> to search</span>
+      <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span><span><kbd>&crarr;</kbd> all results</span><span><kbd>&#8984;</kbd><kbd>&crarr;</kbd> open section</span>
     </div>
   </div>
 </div>
@@ -83,6 +83,40 @@ def render(p):
         next_href=p["next"][0], next_dir=p["next"][1], next_title=p["next"][2],
     )
 
+# ---------------------------------------------------------------------
+# Consolidated search-results page. Reuses the same SHELL (sidebar,
+# theme, overlay). The body is an empty scaffold that assets/app.js
+# fills in from search-index.json + the ?q= query string.
+# ---------------------------------------------------------------------
+SEARCH_BODY = """
+  <section class="section search-page-head">
+    <span class="kicker">Search</span>
+    <form id="searchPageForm" class="search-page-form" role="search" autocomplete="off">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchPageInput" type="search" name="q" placeholder="Try: how to create a token, set up Frogbot, promote a build…" aria-label="Search the knowledge base" />
+      <button type="submit" class="search-page-go">Search</button>
+    </form>
+    <p class="search-page-meta" id="searchPageMeta"></p>
+  </section>
+
+  <div class="search-layout">
+    <div id="searchPageResults" class="search-page-results" aria-live="polite"></div>
+    <aside id="searchPageRelated" class="search-page-related" aria-label="Related information"></aside>
+  </div>
+"""
+
+def render_search():
+    onthis = ""  # results page has no in-page anchors
+    return SHELL.format(
+        title="Search", desc="Search every JFrog Learn page — concepts, commands, and CLI — consolidated on one page with deep links and related topics.",
+        onthispage=onthis,
+        badges='<span class="lvl">All pages</span><span class="lvl">Consolidated</span>',
+        h1="Search results", lede="Everything matching your query, grouped by topic with deep links into the exact section — plus related material so you don\u2019t have to search again.",
+        body=SEARCH_BODY,
+        prev_href="../index.html", prev_dir="Back to", prev_title="Home",
+        next_href="fundamentals.html", next_dir="Start with", next_title="Fundamentals",
+    )
+
 if __name__ == "__main__":
     from page_data import PAGE_LIST
     for p in PAGE_LIST:
@@ -90,3 +124,7 @@ if __name__ == "__main__":
         with open(out, "w") as f:
             f.write(render(p))
         print("wrote", p["file"])
+    # search results page
+    with open(os.path.join(PAGES, "search.html"), "w") as f:
+        f.write(render_search())
+    print("wrote search.html")
