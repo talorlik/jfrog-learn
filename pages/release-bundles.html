@@ -43,18 +43,18 @@
   <section id="problem" class="section">
     <span class="kicker kicker-art">Concept</span>
     <h2>The problem Release Bundles solve</h2>
-    <p class="prose">Promotion moves binaries <em>inside</em> one platform. But shipping a release <em>out</em> — to a customer site, an edge location, or an air-gapped network — raises new questions: which exact files belong to "v2.4.0"? Were any swapped in transit? Can the receiving side prove provenance? A loose folder of artifacts answers none of these.</p>
-    <p class="prose">A <strong>Release Bundle</strong> is the answer: an <em>immutable, signed</em> specification of the precise set of artifacts that constitute a release, with a checksum-verified manifest. <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/release-lifecycle-management" target="_blank" rel="noopener">JFrog — Release Lifecycle Management</a>.</p>
+    <p class="prose">Promotion moves binaries <em>inside</em> one platform. But shipping a release <em>out</em> — to a customer site, an edge location, or an <b>air-gapped network</b> (a network with no internet connection at all, for security) — raises new questions: which exact files belong to "v2.4.0"? Were any swapped in transit? Can the receiving side prove <b>provenance</b> (a verifiable record of where each file came from and that it wasn't altered)? A loose folder of artifacts answers none of these.</p>
+    <p class="prose">A <strong>Release Bundle</strong> is the answer: an <em>immutable</em> (can never be changed after creation), <em>signed</em> specification of the precise set of artifacts that make up a release, with a checksum-verified <b>manifest</b> (the packing list &mdash; it names every file and its checksum fingerprint). <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/release-lifecycle-management" target="_blank" rel="noopener">JFrog — Release Lifecycle Management</a>.</p>
   </section>
 
   <section id="bundle" class="section">
     <span class="kicker kicker-x">Definition</span>
     <h2>What's inside a Release Bundle</h2>
     <ul class="feature-list">
-      <li><b>A curated artifact set.</b> You select artifacts (by AQL query, build, or path) that make up the release. The bundle records each one's checksum.</li>
+      <li><b>A curated artifact set.</b> You select the artifacts that make up the release — by build, by file path, or by an <b>AQL</b> query (Artifactory Query Language, a JSON-based search language for finding artifacts by name, property, repo, etc.). The bundle records each one's checksum.</li>
       <li><b>Immutability.</b> Once created, the bundle's contents can't change. A new release means a new bundle version.</li>
-      <li><b>Cryptographic signing.</b> The bundle manifest is signed with a GPG key, so any recipient can verify it wasn't tampered with.</li>
-      <li><b>Provenance metadata.</b> The bundle carries the source build-info and (optionally) Xray scan results, giving the receiver evidence of what was vetted.</li>
+      <li><b>Cryptographic signing.</b> The bundle manifest is signed with a <b>GPG key</b> (GPG = GNU Privacy Guard, a standard tool for cryptographic signatures). The signer holds a private key; recipients hold the matching public key and use it to confirm the bundle came from you and wasn't tampered with.</li>
+      <li><b>Provenance metadata.</b> The bundle carries the source build-info and (optionally) Xray security-scan results, giving the receiver evidence of exactly what was built and what was vetted.</li>
     </ul>
     <div class="analogy analogy-x">
       <span class="analogy-icon" aria-hidden="true">📜</span>
@@ -105,15 +105,18 @@
   <section id="cli" class="section">
     <span class="kicker kicker-lab">CLI</span>
     <h2>Create and distribute a bundle (CLI)</h2>
-    <p class="prose">The JFrog CLI exposes release-bundle commands under <code>jf rbc</code> / <code>jf rbu</code> (create/update) and <code>jf rbd</code> (distribute), depending on the lifecycle version. The conceptual flow: <a href="https://jfrog.com/help/r/jfrog-cli/release-bundles" target="_blank" rel="noopener">JFrog CLI — Release Bundles</a>.</p>
+    <p class="prose">The JFrog CLI exposes release-bundle commands under <code>jf rbc</code> / <code>jf rbu</code> (create/update) and <code>jf rbd</code> (distribute) &mdash; these short names are just aliases for the longer commands below. The conceptual flow: <a href="https://jfrog.com/help/r/jfrog-cli/release-bundles" target="_blank" rel="noopener">JFrog CLI — Release Bundles</a>.</p>
     <p class="code-label">Create a signed bundle from a spec, then distribute</p>
-    <div class="codeblock"><code><span class="cm"># 1. Create release bundle v2.4.0 from an artifact spec</span>
+    <div class="codeblock"><code><span class="cm"># 1. Create release bundle "my-app" v2.4.0 from a spec file.</span>
+<span class="cm">#    --spec: JSON listing which artifacts to include (by path/AQL)</span>
+<span class="cm">#    --signing-key: the GPG key that signs (seals) the manifest</span>
 jf release-bundle-create my-app 2.4.0 \
-  --spec=release-spec.json --signing-key=my-gpg-key
+  --spec=release-spec.json \
+  --signing-key=my-gpg-key
 
-<span class="cm"># 2. Distribute it to the configured edge nodes</span>
+<span class="cm"># 2. Distribute it to every edge node matching the pattern (* is a wildcard)</span>
 jf release-bundle-distribute my-app 2.4.0 \
-  --site="edge-eu-*"</code></code></div>
+  --site="edge-eu-*"</code></div>
     <p class="prose muted">The spec selects artifacts (by AQL/path); the signing key seals the manifest; the distribute step fans it out to matching edge sites. Exact subcommands vary by Release Lifecycle Management version — check the linked CLI reference for your platform.</p>
   </section>
 

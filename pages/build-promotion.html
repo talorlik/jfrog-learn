@@ -43,7 +43,8 @@
   <section id="what" class="section">
     <span class="kicker kicker-art">Concept</span>
     <h2>What build promotion actually is</h2>
-    <p class="prose"><strong>Build promotion changes a build's status to a more mature stage</strong> — for example <code>dev</code> → <code>staging</code> → <code>released</code> — and can optionally move or copy the build's artifacts (and their dependencies) into a target repository and set properties on them. The crucial part: <em>no rebuild happens</em>. The same binary that passed your tests is the one that advances. <a href="https://jfrog.com/help/r/how-does-build-promotion-work/artifactory-how-does-build-promotion-work" target="_blank" rel="noopener">JFrog — How build promotion works</a>.</p>
+    <p class="prose">First, two words you'll see a lot. A <b>build</b> is one run of your CI/CD pipeline that produces artifacts ("CI/CD" = Continuous Integration / Continuous Delivery, the automated build-test-ship flow). A <b>stage</b> is a maturity level a build has reached, such as dev, staging, or released.</p>
+    <p class="prose"><strong>Build promotion changes a build's status to a more mature stage</strong> — for example <code>dev</code> → <code>staging</code> → <code>released</code> — and can optionally move or copy the build's artifacts (and their dependencies) into a target repository and set properties on them ("properties" are key/value tags like <code>stage=released</code>). The crucial part: <em>no rebuild happens</em>. The same binary that passed your tests is the one that advances. <a href="https://jfrog.com/help/r/how-does-build-promotion-work/artifactory-how-does-build-promotion-work" target="_blank" rel="noopener">JFrog — How build promotion works</a>.</p>
     <div class="analogy">
       <span class="analogy-icon" aria-hidden="true">🎟️</span>
       <div>
@@ -56,11 +57,11 @@
   <section id="buildinfo" class="section">
     <span class="kicker kicker-art">Foundation</span>
     <h2>build-info and artifact identity</h2>
-    <p class="prose">Promotion only works because Artifactory records <strong>build-info</strong> — metadata capturing which artifacts a build produced, which dependencies it consumed, and the environment it ran in. Artifacts are tracked by their <strong>checksum (SHA-1/SHA-256)</strong> plus the <code>build.name</code> and <code>build.number</code> properties, so Artifactory knows an artifact's identity no matter what repository it currently sits in. <a href="https://docs.jfrog.com/integrations/docs/manage-builds" target="_blank" rel="noopener">JFrog — Manage builds</a>, <a href="https://docs.jfrog.com/artifactory/docs/build-integration" target="_blank" rel="noopener">Build integration</a>.</p>
+    <p class="prose">Promotion only works because Artifactory records <strong>build-info</strong> — a metadata record (a JSON document) capturing which artifacts a build produced, which dependencies it consumed, and the environment it ran in. Think of it as the build's birth certificate. Artifacts are tracked by their <strong>checksum</strong> — a short fingerprint computed from the file's exact bytes (using the SHA-1 and SHA-256 hashing algorithms); if even one byte changes, the checksum changes, so it uniquely identifies that exact file. Combined with the <code>build.name</code> and <code>build.number</code> properties, Artifactory always knows an artifact's identity no matter what repository it currently sits in. <a href="https://docs.jfrog.com/integrations/docs/manage-builds" target="_blank" rel="noopener">JFrog — Manage builds</a>, <a href="https://docs.jfrog.com/artifactory/docs/build-integration" target="_blank" rel="noopener">Build integration</a>.</p>
     <ul class="feature-list">
       <li><b>Location-agnostic.</b> Because identity is the checksum + build coordinates, moving an artifact between repos doesn't lose its lineage.</li>
       <li><b>Full traceability.</b> From a release artifact you can walk back to the exact build, its dependencies, and its source commit.</li>
-      <li><b>Required first step.</b> Your CI must publish build-info (the JFrog CLI does this automatically on <code>jf rt build-publish</code>) before you can promote that build.</li>
+      <li><b>Required first step.</b> Your CI must <em>publish</em> build-info before you can promote that build. The JFrog CLI (<code>jf</code>, JFrog's command-line tool) does this with <code>jf rt build-publish</code> &mdash; here <code>rt</code> means "Artifactory" (its internal name was "rt").</li>
     </ul>
   </section>
 
@@ -86,9 +87,11 @@
   <section id="cli" class="section">
     <span class="kicker kicker-lab">CLI</span>
     <h2>Promote a build with the JFrog CLI</h2>
-    <p class="prose">The command is <code>jf rt build-promote</code> (alias <code>jf rt bpr</code>). You name the build, its number, and the target repo, plus options for copy/move and the new status. <a href="https://jfrog.com/help/r/artifactory-rest-apis/build-promotion" target="_blank" rel="noopener">JFrog — Build promotion</a>.</p>
+    <p class="prose">The command is <code>jf rt build-promote</code> (alias <code>jf rt bpr</code> &mdash; an "alias" is just a shorter name for the same command). You name the build, its number, and the target repo, plus options for copy/move and the new status. <a href="https://jfrog.com/help/r/artifactory-rest-apis/build-promotion" target="_blank" rel="noopener">JFrog — Build promotion</a>.</p>
     <p class="code-label">Promote build "TestBuild" #49 to a release repo</p>
-    <div class="codeblock"><code>jf rt build-promote \
+    <div class="codeblock"><code><span class="cm"># --status: new maturity label  | --copy=true: keep originals (false=move)</span>
+<span class="cm"># --source-repo: where artifacts live now  | final args: build name, number, target repo</span>
+jf rt build-promote \
   --status=Released \
   --copy=true \
   --source-repo=staging-local \
@@ -134,7 +137,7 @@ Content-Type: application/json
     </figure>
     <div class="callout callout-tip">
       <p class="callout-title">Tie it back to Xray</p>
-      <p>The power move: a <a href="fundamentals.html#policies">Policy + Watch</a> on <code>staging-local</code> blocks promotion to <code>release-local</code> if a High/Critical CVE with an available fix is present. Promotion becomes your enforced quality gate, not a manual courtesy.</p>
+      <p>The power move: a <a href="fundamentals.html#policies">Policy + Watch</a> on <code>staging-local</code> blocks promotion to <code>release-local</code> if a High/Critical CVE with an available fix is present. (A <b>CVE</b> &mdash; Common Vulnerabilities and Exposures &mdash; is a publicly catalogued security flaw, each with an ID like <code>CVE-2021-44228</code>.) Promotion becomes your enforced quality gate, not a manual courtesy.</p>
     </div>
   </section>
 

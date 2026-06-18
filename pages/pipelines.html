@@ -42,7 +42,11 @@
   <section id="what" class="section">
     <span class="kicker kicker-lab">Concept</span>
     <h2>What JFrog Pipelines is</h2>
-    <p class="prose"><strong>JFrog Pipelines is a CI/CD automation engine built into the JFrog Platform.</strong> You define pipelines in a <strong>YAML-based Pipelines DSL</strong> — a set of key-value files known as a <em>pipeline config</em> — and store them in a Git-compatible source repository. Pipelines syncs from that source, loads your DSL, and runs continuous integration and delivery on build nodes. <a href="https://jfrog.com/help/r/jfrog-pipelines-documentation/creating-pipelines" target="_blank" rel="noopener">JFrog — Creating Pipelines</a>.</p>
+    <div class="callout callout-q">
+      <p class="callout-title">Plain-English glossary for this page</p>
+      <p><b>CI/CD</b> = Continuous Integration / Continuous Delivery: automating the build &rarr; test &rarr; ship cycle. <b>DSL</b> = Domain-Specific Language: a small, purpose-built language (here, written in YAML) for describing pipelines. <b>Build node</b> = a machine (or container) that actually runs your pipeline steps. <b>YAML</b> = an indentation-based text config format.</p>
+    </div>
+    <p class="prose"><strong>JFrog Pipelines is a CI/CD automation engine built into the JFrog Platform.</strong> You define pipelines in a <strong>YAML-based Pipelines DSL</strong> — a set of key-value files known as a <em>pipeline config</em> — and store them in a Git-compatible source repository (any repo on GitHub, GitLab, etc.). Pipelines syncs from that source, loads your DSL, and runs continuous integration and delivery on build nodes. <a href="https://jfrog.com/help/r/jfrog-pipelines-documentation/creating-pipelines" target="_blank" rel="noopener">JFrog — Creating Pipelines</a>.</p>
     <div class="callout callout-q">
       <p class="callout-title">How is this different from GitHub Actions?</p>
       <p>Both run YAML-defined CI/CD. Pipelines' edge is native integration with Artifactory (build-info, promotion) and Xray (scanning gates) plus centrally-managed, secure integrations and reusable resources. If you already live in the JFrog platform, Pipelines keeps everything in one place. You can also combine it with Jenkins, GitHub Actions, or Azure DevOps.</p>
@@ -98,8 +102,8 @@
     <span class="kicker kicker-lab">How-to</span>
     <h2>Standing up your first pipeline</h2>
     <ol class="steps">
-      <li><b>Sign in</b> to the JFrog Platform with your Artifactory credentials. On JFrog Cloud, a default dynamic node pool is provisioned, so you already have build nodes.</li>
-      <li><b>Add a GitHub integration.</b> Administration → Pipelines → <b>Integrations</b> → add a GitHub integration with a personal access token that has <code>repo</code> + <code>admin</code> OAuth scopes.</li>
+      <li><b>Sign in</b> to the JFrog Platform with your Artifactory credentials. On JFrog Cloud, a default dynamic node pool is provisioned for you (a "node pool" is a group of build machines that scale up/down on demand), so you already have build nodes — nothing to install.</li>
+      <li><b>Add a GitHub integration.</b> Administration → Pipelines → <b>Integrations</b> → add a GitHub integration with a personal access token (a GitHub token that grants API access) that has the <code>repo</code> + <code>admin</code> <b>scopes</b> (a "scope" is a permission the token is allowed to use).</li>
       <li><b>Add a pipeline source.</b> Point Pipelines at the repo (and branch) holding your YAML DSL, connected through that integration. Pipelines syncs and processes the DSL.</li>
       <li><b>Commit DSL changes.</b> Every commit to the YAML re-syncs the source and reloads the pipeline.</li>
       <li><b>Run it.</b> Trigger manually or via a <code>GitRepo</code> resource that fires steps when the repo changes.</li>

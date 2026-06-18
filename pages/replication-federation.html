@@ -43,19 +43,23 @@
   <section id="why" class="section">
     <span class="kicker kicker-art">Concept</span>
     <h2>Why sync artifacts across sites at all?</h2>
-    <p class="prose">A single Artifactory instance is one point in the world. The moment you have teams in London and Tokyo, a CI farm in another region, or a disaster-recovery site, builds in one place need the same binaries that live in another. Pulling everything across an ocean on every build is slow and fragile.</p>
+    <p class="prose">A single Artifactory instance is one point in the world. The moment you have teams in London and Tokyo, a CI (Continuous Integration &mdash; the automated server that builds and tests your code) farm in another region, or a disaster-recovery site (a backup copy you can switch to if your main one fails), builds in one place need the same binaries that live in another. "Binaries" here just means the packaged outputs you store in Artifactory &mdash; Docker images, JAR files, npm packages, and so on. Pulling all of them across an ocean on every build is slow and fragile.</p>
     <div class="cards">
       <div class="card"><span class="card-num">01</span><h3>Latency</h3><p>Developers and CI resolve dependencies from a local copy instead of crossing continents on every download.</p></div>
       <div class="card"><span class="card-num">02</span><h3>Availability</h3><p>If one site or its network goes down, the others still have their own copy and keep building.</p></div>
       <div class="card"><span class="card-num">03</span><h3>Disaster recovery</h3><p>A synced standby instance lets you fail over with the artifacts already in place.</p></div>
     </div>
-    <p class="prose muted">JFrog offers two answers: <strong>replication</strong> (an older, one-directional copy job) and <strong>federation</strong> (newer, automatic, multi-directional mirroring). <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/repository-replication" target="_blank" rel="noopener">JFrog — Repository Replication</a>.</p>
+    <div class="callout callout-q">
+      <p class="callout-title">First, one term you'll see everywhere: JPD</p>
+      <p>A <b>JPD</b> stands for <b>JFrog Platform Deployment</b> &mdash; it's simply one complete, self-contained install of the JFrog Platform (Artifactory + Xray + the rest), running in one place. When this page says "site", "instance", or "deployment", it means one JPD. Syncing artifacts across sites means syncing them between JPDs.</p>
+    </div>
+    <p class="prose muted">JFrog offers two answers: <strong>replication</strong> (an older, one-directional copy job) and <strong>federation</strong> (newer, automatic, multi-directional mirroring). "One-directional" means data flows from a source to a target only; "multi-directional" means every copy can both send and receive. <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/repository-replication" target="_blank" rel="noopener">JFrog — Repository Replication</a>.</p>
   </section>
 
   <section id="replication" class="section">
     <span class="kicker kicker-art">Replication</span>
     <h2>Replication — copying repositories between instances</h2>
-    <p class="prose"><strong>Replication</strong> synchronizes the contents of a repository on one Artifactory instance with a repository on another. It runs on a <em>schedule</em> (cron) or can be triggered as an event, and it copies artifacts plus their properties. Replication works on <span class="pill pill-local">local</span> and <span class="pill pill-remote">remote</span> repositories. <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/repository-replication" target="_blank" rel="noopener">Source</a>.</p>
+    <p class="prose"><strong>Replication</strong> synchronizes the contents of a repository on one Artifactory instance with a repository on another. It runs on a <em>schedule</em> &mdash; defined by a <b>cron</b> expression, which is just a compact string that says "run at these times" (for example, every hour) &mdash; or it can be triggered automatically as an <em>event</em> the moment something changes. It copies artifacts plus their <b>properties</b> (key/value tags attached to an artifact, like <code>stage=released</code>). Replication works on <span class="pill pill-local">local</span> and <span class="pill pill-remote">remote</span> repositories. <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/repository-replication" target="_blank" rel="noopener">Source</a>.</p>
     <div class="callout callout-q">
       <p class="callout-title">Key trait: it's one-directional</p>
       <p>A single replication has a clear source and target. Site A pushes to Site B, or Site B pulls from Site A — but one replication relationship only flows one way. To mirror both directions you configure two separate jobs.</p>
@@ -86,24 +90,24 @@
         <span class="flow-conn">← pull ←</span>
         <div class="flow-step flow-art"><span class="flow-step-n">B</span><b>Target JPD</b><small>fetches the copy</small></div>
       </div>
-      <figcaption>Push and pull move data the same direction (A → B); they differ only in <em>which side starts the transfer</em>. Push is good when the source can reach the target; pull is good when only the target can reach out (e.g. firewalled edge). <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/repository-replication" target="_blank" rel="noopener">JFrog Replication</a>.</figcaption>
+      <figcaption>Push and pull move data the same direction (A → B); they differ only in <em>which side starts the transfer</em>. Push is good when the source can reach the target; pull is good when only the target can reach out (for example, a firewalled edge site that is allowed to make outbound connections but not receive inbound ones). <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/repository-replication" target="_blank" rel="noopener">JFrog Replication</a>.</figcaption>
     </figure>
   </section>
 
   <section id="federation" class="section">
     <span class="kicker kicker-x">Federation</span>
     <h2>Federated repositories — automatic multi-directional mirroring</h2>
-    <p class="prose">A <span class="pill pill-fed">Federated</span> repository behaves like a <span class="pill pill-local">local</span> repo, but it is bi-directionally mirrored across multiple <strong>members</strong> — up to 10 repositories living on different JFrog Platform Deployments (JPDs). Write to any member and the change propagates to all the others, automatically and asynchronously. <a href="https://docs.jfrog.com/artifactory/docs/federated-repositories" target="_blank" rel="noopener">JFrog — Federated Repositories</a>.</p>
+    <p class="prose">A <span class="pill pill-fed">Federated</span> repository behaves like a <span class="pill pill-local">local</span> repo, but it is bi-directionally mirrored across multiple <strong>members</strong> — up to 10 repositories living on different JFrog Platform Deployments (JPDs, defined above). "Bi-directional" means the sync flows both ways. Write to any member and the change <em>propagates</em> (spreads automatically) to all the others, <em>asynchronously</em> (in the background, so your write doesn't have to wait for every copy to finish). <a href="https://docs.jfrog.com/artifactory/docs/federated-repositories" target="_blank" rel="noopener">JFrog — Federated Repositories</a>.</p>
     <ul class="feature-list">
       <li><b>Bi-directional by design.</b> Every member is both source and target — no manual two-way setup. Deploy to London, it appears in Tokyo, and vice-versa.</li>
       <li><b>Async, queue-backed.</b> Changes are replicated through a persistent queue, so a temporary network blip doesn't lose data — it catches up when connectivity returns.</li>
       <li><b>Configuration is synced too.</b> Repository configuration (not just artifacts) is kept aligned across members.</li>
       <li><b>Up to 10 members.</b> A federation can span up to ten member repositories across JPDs.</li>
-      <li><b>Enterprise tier.</b> Federated repositories require an Enterprise X (or higher) subscription.</li>
+      <li><b>Enterprise tier.</b> Federated repositories require an Enterprise X (or higher) paid subscription — so you won't see them on the free tier.</li>
     </ul>
     <div class="callout callout-tip">
       <p class="callout-title">The mental shortcut</p>
-      <p><b>Replication = a copy job you schedule, one direction at a time.</b> <b>Federation = a self-healing cluster of mirror repos that stay in sync automatically, both ways.</b> Federation is the modern default for active-active multi-site; replication still fits one-way DR and edge-cache patterns.</p>
+      <p><b>Replication = a copy job you schedule, one direction at a time.</b> <b>Federation = a self-healing cluster of mirror repos that stay in sync automatically, both ways.</b> Federation is the modern default for "active-active" multi-site (every site is live and writable at once); replication still fits one-way disaster-recovery (DR) standbys and edge-cache patterns.</p>
     </div>
   </section>
 
@@ -140,12 +144,12 @@
     <h3 class="subhead">Create a federated repository (UI)</h3>
     <ol class="steps">
       <li><b>Add repository → Federated.</b> Choose the package type, then create the repo on your first JPD.</li>
-      <li><b>Add members.</b> In the Federated configuration, add member URLs for the other JPDs (the platform must be aware of those JPDs via Mission Control / circle-of-trust).</li>
+      <li><b>Add members.</b> In the Federated configuration, add member URLs for the other JPDs. For one JPD to trust another, they must first be linked — JFrog calls this the "circle of trust", set up through Mission Control (JFrog's tool for managing multiple deployments). Think of it as the two deployments exchanging IDs so they'll accept each other's data.</li>
       <li><b>Deploy anywhere.</b> Push an artifact to any member; verify it appears on the others within seconds.</li>
     </ol>
     <div class="callout callout-q">
       <p class="callout-title">Tip for your labs</p>
-      <p>On the free single-instance tier you can't truly demonstrate multi-JPD federation — you need at least two deployments. You <em>can</em> still create the repo types and read the configuration screens to understand the model. For a real two-site test, stand up two self-hosted instances (see the Docker lab on the <a href="fundamentals.html">Fundamentals</a> page).</p>
+      <p><b>Prerequisite reminder:</b> on the free single-instance tier you can't truly demonstrate multi-JPD federation — you need at least two separate deployments. You <em>can</em> still create the repo types and read the configuration screens to understand the model. For a real two-site test, stand up two self-hosted instances ("self-hosted" means you run Artifactory yourself, e.g. in Docker, instead of using JFrog's cloud) — see the Docker lab on the <a href="fundamentals.html">Fundamentals</a> page.</p>
     </div>
   </section>
 

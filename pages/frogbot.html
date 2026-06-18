@@ -42,7 +42,11 @@
   <section id="what" class="section">
     <span class="kicker kicker-x">Concept</span>
     <h2>What Frogbot is</h2>
-    <p class="prose"><strong>Frogbot is a Git bot that scans your pull requests and repositories for security vulnerabilities using JFrog Xray.</strong> When a developer opens a PR, Frogbot scans it and posts the results as a comment (a "decoration") directly on the PR — and if it finds no new issues, it says so. It works with GitHub, GitLab, Bitbucket, and Azure Repos. <a href="https://github.com/jfrog/frogbot" target="_blank" rel="noopener">jfrog/frogbot</a>.</p>
+    <div class="callout callout-q">
+      <p class="callout-title">Two terms first: PR and "shift-left"</p>
+      <p>A <b>pull request (PR)</b> is how you propose changes on GitHub/GitLab &mdash; you push your branch and open a PR asking to merge it, so teammates (and bots) can review it before it lands. <b>"Shift-left"</b> means catching problems as early as possible in the development timeline (drawn left-to-right), because the earlier you catch a bug or vulnerability, the cheaper it is to fix.</p>
+    </div>
+    <p class="prose"><strong>Frogbot is a Git bot that scans your pull requests and repositories for security vulnerabilities using JFrog Xray</strong> (Xray is JFrog's security scanner). When a developer opens a PR, Frogbot scans it and posts the results as a comment (JFrog calls this a "decoration") directly on the PR — and if it finds no new issues, it says so. It works with GitHub, GitLab, Bitbucket, and Azure Repos. <a href="https://github.com/jfrog/frogbot" target="_blank" rel="noopener">jfrog/frogbot</a>.</p>
     <ul class="feature-list">
       <li><b>Only flags <em>new</em> issues.</b> A PR scan compares the project state before and after the change, so it reports only vulnerabilities the PR introduces — not pre-existing noise.</li>
       <li><b>Opens fix PRs.</b> When fixable issues are found and auto-fix is enabled, Frogbot opens a pull request that upgrades the vulnerable dependency to a fixed version.</li>
@@ -65,7 +69,7 @@
     <p class="prose muted">Source: <a href="https://docs.jfrog.com/security/docs/how-to-commit-scan-and-pr-scan" target="_blank" rel="noopener">JFrog — Scanning Commits and Pull Requests</a>.</p>
     <div class="callout callout-tip">
       <p class="callout-title">Required environment variables</p>
-      <p>Both modes need <code>JF_URL</code> (your platform URL, e.g. <code>https://my.jfrog.io</code>) and <code>JF_ACCESS_TOKEN</code> (a scoped token), plus a Git token (<code>JF_GIT_TOKEN</code> / the CI's built-in token) so Frogbot can comment and open PRs.</p>
+      <p>An "environment variable" is a named value the running job can read. Both modes need <code>JF_URL</code> (your platform URL, e.g. <code>https://my.jfrog.io</code>) and <code>JF_ACCESS_TOKEN</code> (a scoped access token &mdash; see the <a href="access-tokens.html">Access tokens</a> page), plus a Git token (<code>JF_GIT_TOKEN</code> / the CI's built-in token) so Frogbot has permission to comment and open PRs on your repo.</p>
     </div>
   </section>
 
@@ -84,28 +88,28 @@
   <section id="yaml" class="section">
     <span class="kicker kicker-lab">YAML</span>
     <h2>The PR-scan workflow</h2>
-    <p class="prose">A minimal GitHub Actions workflow that runs Frogbot on every pull request. <a href="https://jfrog.com/help/r/jfrog-and-github-integration-guide/github-pr-scans-and-advanced-security" target="_blank" rel="noopener">JFrog — GitHub PR scans</a>.</p>
-    <div class="codeblock"><code>name: "Frogbot Scan Pull Request"
-on:
-  pull_request_target:
-    types: [ opened, synchronize ]
+    <p class="prose">A minimal GitHub Actions workflow that runs Frogbot on every pull request. A "workflow" is a YAML file in <code>.github/workflows/</code> that GitHub runs automatically when a trigger fires. <b>YAML</b> is an indentation-based config format &mdash; indentation (spaces, never tabs) defines the nesting. <a href="https://jfrog.com/help/r/jfrog-and-github-integration-guide/github-pr-scans-and-advanced-security" target="_blank" rel="noopener">JFrog — GitHub PR scans</a>.</p>
+    <div class="codeblock"><code>name: "Frogbot Scan Pull Request"   <span class="cm"># label shown in the Actions tab</span>
+on:                                  <span class="cm"># what triggers this workflow</span>
+  pull_request_target:               <span class="cm"># run when a PR is opened/updated</span>
+    types: [ opened, synchronize ]   <span class="cm"># "synchronize" = new commits pushed to the PR</span>
 
-permissions:
-  pull-requests: write
-  contents: read
+permissions:                         <span class="cm"># what the job is allowed to do</span>
+  pull-requests: write               <span class="cm"># needed to post the scan comment</span>
+  contents: read                     <span class="cm"># read the repo files to scan them</span>
   id-token: write
 
 jobs:
   scan-pull-request:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest           <span class="cm"># the VM type GitHub runs the job on</span>
     <span class="cm"># PR must be approved by a "frogbot" environment reviewer before scanning</span>
     environment: frogbot
     steps:
-      - uses: jfrog/frogbot@v2
-        env:
-          JF_URL: ${{ vars.JF_URL }}
-          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
-          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}</code></div>
+      - uses: jfrog/frogbot@v2       <span class="cm"># the official Frogbot action, version 2</span>
+        env:                         <span class="cm"># env vars passed to Frogbot</span>
+          JF_URL: ${{ vars.JF_URL }}                    <span class="cm"># vars.* = a repo variable (not secret)</span>
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }} <span class="cm"># secrets.* = an encrypted repo secret</span>
+          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}      <span class="cm"># auto-provided by GitHub Actions</span></code></div>
     <p class="prose muted">For the repository (auto-fix) mode, use a separate workflow triggered on push to your default branch (or on a schedule) that runs Frogbot in <code>scan-repository</code> mode. <a href="https://jfrog.com/help/r/jfrog-and-github-integration-guide/configure-frogbot-in-github-actions" target="_blank" rel="noopener">Configure Frogbot in GitHub Actions</a>.</p>
   </section>
 

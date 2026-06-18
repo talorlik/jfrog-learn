@@ -43,7 +43,11 @@
   <section id="tokens" class="section">
     <span class="kicker kicker-art">Concept</span>
     <h2>Access tokens — the modern way to authenticate</h2>
-    <p class="prose">An <strong>access token</strong> is a signed credential that identifies you (or a service) to the JFrog Platform. Unlike a password, a token is <em>scoped</em> (it can be limited to specific resources), <em>revocable</em> (kill it without changing your password), and <em>expirable</em> (it can auto-die after a set time). That makes tokens the right choice for CI jobs, the REST API, Frogbot, and IDE plugins. <a href="https://jfrog.com/help/r/jfrog-platform-administration-documentation/access-tokens" target="_blank" rel="noopener">JFrog — Access Tokens</a>.</p>
+    <div class="callout callout-q">
+      <p class="callout-title">Authentication vs. authorization</p>
+      <p>Two words that sound alike but mean different things. <b>Authentication</b> = proving <em>who you are</em> (done with an access token). <b>Authorization</b> = deciding <em>what you're allowed to do</em> (done with the permissions model later on this page). A token gets you in the door; permissions decide which rooms you can enter.</p>
+    </div>
+    <p class="prose">An <strong>access token</strong> is a signed credential that identifies you (or a service) to the JFrog Platform. Unlike a password, a token is <em>scoped</em> (it can be limited to specific resources — "scope" = the set of things it's allowed to touch), <em>revocable</em> (you can kill it without changing your password), and <em>expirable</em> (it can auto-die after a set time). That makes tokens the right choice for CI jobs, the REST API, Frogbot, and IDE plugins. <a href="https://jfrog.com/help/r/jfrog-platform-administration-documentation/access-tokens" target="_blank" rel="noopener">JFrog — Access Tokens</a>.</p>
     <ul class="feature-list">
       <li><b>No password exposure.</b> A leaked token can be revoked in isolation; your account password is never embedded in scripts.</li>
       <li><b>Scoped to least privilege.</b> Grant a token only the access a given job actually needs.</li>
@@ -66,7 +70,7 @@
     </div>
     <div class="callout callout-tip">
       <p class="callout-title">Default to least privilege</p>
-      <p>Reach for a <b>custom-scoped</b> token tied to a service identity before an admin token. If a custom token leaks, the blast radius is one repo, not your whole platform.</p>
+      <p><b>"Least privilege"</b> means giving each token only the access it truly needs and nothing more. Reach for a <b>custom-scoped</b> token tied to a service identity before an admin token. If a custom token leaks, the "blast radius" (how much damage an attacker could do) is one repo, not your whole platform.</p>
     </div>
   </section>
 
@@ -81,12 +85,14 @@
     </ol>
     <h3 class="subhead">2. With the JFrog CLI</h3>
     <p class="code-label">Create a token (alias <code>jf atc</code>)</p>
-    <div class="codeblock"><code>jf access-token-create --expiry=3600
+    <div class="codeblock"><code>jf access-token-create --expiry=3600   <span class="cm"># expiry is in seconds: 3600 = 1 hour</span>
 <span class="cm"># scope it to a specific user, or add --groups / --scope</span>
-jf atc --groups=ci-bots --expiry=86400</code></div>
+jf atc --groups=ci-bots --expiry=86400 <span class="cm"># atc = alias; 86400s = 24 hours; token inherits the ci-bots group's access</span></code></div>
     <h3 class="subhead">3. Over the REST API</h3>
     <p class="code-label">POST to the tokens endpoint</p>
-    <div class="codeblock"><code>curl -XPOST -H "Authorization: Bearer $ADMIN_TOKEN" \
+    <div class="codeblock"><code><span class="cm"># POST = create. Minting a token needs an admin token in the header.</span>
+<span class="cm"># subject: who the token represents | scope: which permissions it gets | expires_in: seconds</span>
+curl -XPOST -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   https://yourname.jfrog.io/access/api/v1/tokens \
   -d '{
