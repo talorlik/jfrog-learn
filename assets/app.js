@@ -77,11 +77,17 @@ function buildSidebar() {
   if (onThis) sb.appendChild(onThis);
 }
 
+/* ---- Safe storage (degrades gracefully where storage is blocked, e.g. sandboxed iframes) ---- */
+const safeStore = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* no-op */ } },
+};
+
 /* ---- Theme toggle ---- */
 function initTheme() {
   const t = document.querySelector('[data-theme-toggle]');
   const r = document.documentElement;
-  const saved = localStorage.getItem('jf-theme');
+  const saved = safeStore.get('jf-theme');
   let d = saved || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
   r.setAttribute('data-theme', d);
   if (!t) return;
@@ -95,7 +101,7 @@ function initTheme() {
   t.addEventListener('click', () => {
     d = d === 'dark' ? 'light' : 'dark';
     r.setAttribute('data-theme', d);
-    localStorage.setItem('jf-theme', d);
+    safeStore.set('jf-theme', d);
     render();
   });
 }
