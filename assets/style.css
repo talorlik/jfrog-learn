@@ -384,6 +384,16 @@ figcaption{font-size:var(--text-sm);color:var(--text-muted);margin-top:var(--spa
   font-family:var(--font-mono);font-size:.68rem;padding:.12rem .4rem;
   border:1px solid var(--border);border-radius:.3rem;background:var(--bg);color:var(--text-faint)
 }
+.ask-docs{
+  display:flex;align-items:center;gap:.6rem;width:100%;margin-top:.5rem;
+  padding:.6rem .8rem;border-radius:var(--radius-md);
+  background:var(--primary-soft);border:1px solid color-mix(in oklab,var(--primary) 38%,transparent);
+  color:var(--primary);font-size:var(--text-sm);font-weight:550;
+  text-align:left;transition:all var(--transition)
+}
+.ask-docs:hover{background:var(--primary);color:#08120a;border-color:var(--primary);text-decoration:none}
+.ask-docs svg{flex-shrink:0;color:currentColor}
+.ask-docs .ask-docs-label{flex:1}
 .brand{text-decoration:none;color:inherit}
 
 /* --- Sidebar active page state (anchor to other html files) --- */

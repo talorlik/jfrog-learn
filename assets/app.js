@@ -60,6 +60,12 @@ function buildSidebar() {
     <span class="st-label">Search…</span><kbd>/</kbd>
   </button>`;
 
+  // ask-the-docs (opens the NotebookLM notebook in a new tab)
+  html += `<a class="ask-docs" href="https://notebooklm.google.com/notebook/754de000-7dd1-47ce-905a-9eb659951264/preview" target="_blank" rel="noopener noreferrer" aria-label="Ask the docs (opens NotebookLM in a new tab)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.7"/><path d="M12 16.5h.01"/></svg>
+    <span class="ask-docs-label">Ask the docs</span>
+  </a>`;
+
   // nav groups
   html += '<nav class="nav" aria-label="Knowledge base navigation">';
   for (const g of NAV) {
