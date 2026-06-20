@@ -33,11 +33,17 @@ from docx.shared import Pt, RGBColor, Inches
 # ---------------------------------------------------------------------------
 
 CODE_FONT = "Consolas"
-# Dark code block, matching the live site (.code / .codeblock in style.css):
+# Dark code BLOCK, matching the live site (.code / .codeblock in style.css):
 #   background #0a0d0b, green monospace text #9fe6ad.
 CODE_BG = "0A0D0B"          # near-black code block background (site .code bg)
 CODE_TEXT = RGBColor(0x9F, 0xE6, 0xAD)   # green monospace text (site .code color)
 CODE_BORDER = "24302A"      # subtle dark border around the code block
+# INLINE code (e.g. `GET`, `/artifactory/api/...` inside prose / tables):
+# the green block color is unreadable on white/shaded backgrounds, so inline
+# code uses a dark slate on a very light gray chip - legible on white AND on
+# any shaded callout/table fill in the document.
+INLINE_CODE_TEXT = RGBColor(0x24, 0x2A, 0x33)  # dark slate, high contrast
+INLINE_CODE_BG = "EDEDF2"   # light gray chip behind inline code
 LINK_COLOR = RGBColor(0x1A, 0x57, 0xB7)
 CALLOUT_BG = {
     "callout-tip": "EAF6EC",
@@ -97,6 +103,16 @@ def _set_cell_border(cell, color: str = "C8C8CE", **kwargs):
     tcPr.append(borders)
 
 
+def _run_shade(run, fill_hex: str):
+    """Apply character-level background shading to a run (inline code chip)."""
+    rPr = run._r.get_or_add_rPr()
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
+    shd.set(qn("w:fill"), fill_hex)
+    rPr.append(shd)
+
+
 def _add_hyperlink(paragraph, url: str, text: str):
     """Insert a clickable hyperlink run into a paragraph."""
     part = paragraph.part
@@ -145,7 +161,8 @@ def emit_inline(paragraph, node, *, bold=False, italic=False, code=False):
                 run.italic = italic or None
                 if code:
                     run.font.name = CODE_FONT
-                    run.font.color.rgb = CODE_TEXT
+                    run.font.color.rgb = INLINE_CODE_TEXT
+                    _run_shade(run, INLINE_CODE_BG)
             continue
         if not isinstance(child, Tag):
             continue
