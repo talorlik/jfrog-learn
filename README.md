@@ -1,6 +1,6 @@
-# JFrog Learn — Artifactory & Xray, Bottom-Up
+# JFrog Learn - Artifactory & Xray, Bottom-Up
 
-An interactive, self-paced **knowledge base** that teaches **JFrog Artifactory** and **JFrog Xray** from first principles — no prior knowledge assumed. It grows over time: each new topic becomes its own page with full-text search across everything.
+An interactive, self-paced **knowledge base** that teaches **JFrog Artifactory** and **JFrog Xray** from first principles - no prior knowledge assumed. It grows over time: each new topic becomes its own page with full-text search across everything.
 
 🔗 **Live site:** https://talorlik.github.io/jfrog-learn/
 
@@ -9,21 +9,21 @@ An interactive, self-paced **knowledge base** that teaches **JFrog Artifactory**
 A multi-page knowledge base with client-side search (press `/` or `⌘K` / `Ctrl-K` on any page):
 
 **Core concepts**
-- **Fundamentals** — the problem these tools solve, a vocabulary primer (artifact, CVE, SCA, SBOM, JPD, build-info, promotion), the 4 repository types (local/remote/virtual/federated), the Xray scan lifecycle, the Policy vs. Watch model, three hands-on lab tracks (JFrog Cloud free tier, local Docker, Concepts + CLI), and a `jf` CLI cheat sheet.
-- **Replication & Federation** — keeping artifacts in sync across sites: push/pull replication vs. federated repositories.
-- **Build promotion in practice** — moving a build dev → staging → release without rebuilding, via `build-info`, the CLI, and the REST API.
+- **Fundamentals** - the problem these tools solve, a vocabulary primer (artifact, CVE, SCA, SBOM, JPD, build-info, promotion), the 4 repository types (local/remote/virtual/federated), the Xray scan lifecycle, the Policy vs. Watch model, three hands-on lab tracks (JFrog Cloud free tier, local Docker, Concepts + CLI), and a `jf` CLI cheat sheet.
+- **Replication & Federation** - keeping artifacts in sync across sites: push/pull replication vs. federated repositories.
+- **Build promotion in practice** - moving a build dev → staging → release without rebuilding, via `build-info`, the CLI, and the REST API.
 
 **Distribution**
-- **Release Bundles & Distribution** — immutable signed artifact manifests and shipping them to edge nodes / air-gapped sites.
+- **Release Bundles & Distribution** - immutable signed artifact manifests and shipping them to edge nodes / air-gapped sites.
 
 **Automation & security**
-- **Artifactory REST API** — auth methods, key endpoints, and driving them from `curl` and `jf api`.
-- **Frogbot & IDE integration** — PR/repo scanning with Xray and inline editor findings.
-- **JFrog Pipelines** — the YAML CI/CD engine: integrations, resources, steps, and a Hello-World walkthrough.
-- **Access tokens & permissions** — tokens, and the Users → Groups → Permission Targets model.
+- **Artifactory REST API** - auth methods, key endpoints, and driving them from `curl` and `jf api`.
+- **Frogbot & IDE integration** - PR/repo scanning with Xray and inline editor findings.
+- **JFrog Pipelines** - the YAML CI/CD engine: integrations, resources, steps, and a Hello-World walkthrough.
+- **Access tokens & permissions** - tokens, and the Users → Groups → Permission Targets model.
 
 **Platform operations**
-- **Kubernetes / Helm setup** — installing Artifactory on a cluster via Helm, and using Artifactory as a Helm/OCI chart registry.
+- **Kubernetes / Helm setup** - installing Artifactory on a cluster via Helm, and using Artifactory as a Helm/OCI chart registry.
 
 ## Project structure
 
@@ -49,7 +49,7 @@ Search runs entirely in the browser (a static JSON index fetched and ranked clie
 
 ## Run locally
 
-It's a static site — serve the folder so `fetch()` of the search index works:
+It's a static site - serve the folder so `fetch()` of the search index works:
 
 ```bash
 python3 -m http.server 8000
@@ -63,6 +63,12 @@ python3 -m http.server 8000
 3. Run `build_pages.py` then `build_search_index.py`, and commit.
 
 All facts link to primary JFrog documentation. Product names belong to JFrog Ltd.
+
+## Style rules
+
+- **No em-dashes or en-dashes anywhere** - in the website, the generated Google
+  Docs, or file names. Use plain hyphens (minus) instead. This is a hard rule;
+  full details and the enforcement converter are in [AGENTS.md](AGENTS.md).
 
 ## License
 

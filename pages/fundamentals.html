@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Fundamentals — JFrog Learn</title>
+<title>Fundamentals - JFrog Learn</title>
 <meta name="description" content="JFrog Artifactory & Xray from first principles: the problem they solve, core vocabulary, the 4 repository types, deep recursive scanning, policies & watches, and three hands-on lab tracks." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -43,33 +43,33 @@
     <nav class="breadcrumb"><a href="../index.html">Home</a><span class="sep">/</span><span>Fundamentals</span></nav>
     <div class="page-badges"><span class="lvl lvl-art">Artifactory</span><span class="lvl lvl-xray">Xray</span><span class="lvl">Beginner → core</span></div>
     <h1>Artifactory &amp; Xray from first principles</h1>
-    <p class="lede">Two products, one job: control every <em>binary</em> your software is built from, and prove it's safe. This page builds the whole picture from the bottom up — plain-language concepts, diagrams, comparison tables, then real hands-on labs.</p>
+    <p class="lede">Two products, one job: control every <em>binary</em> your software is built from, and prove it's safe. This page builds the whole picture from the bottom up - plain-language concepts, diagrams, comparison tables, then real hands-on labs.</p>
   </header>
 
   <!-- THE PROBLEM -->
   <section id="problem" class="section">
     <span class="kicker">Foundations</span>
     <h2>The problem these tools solve</h2>
-    <p class="prose">Before any product names, understand the pain. When you build software, your code is only a small part of what actually ships. The rest is <strong>binaries</strong> — compiled libraries, container images, packages — that you either build yourself or download from the internet.</p>
+    <p class="prose">Before any product names, understand the pain. When you build software, your code is only a small part of what actually ships. The rest is <strong>binaries</strong> - compiled libraries, container images, packages - that you either build yourself or download from the internet.</p>
 
     <div class="callout callout-q">
       <p class="callout-title">What is a "binary" / "artifact"?</p>
-      <p>Anything your build produces or consumes that isn't source code: a <code>.jar</code>, an <code>npm</code> package, a Docker image, a Python wheel, a Helm chart, a compiled <code>.exe</code>. The generic industry word is <strong>artifact</strong>. JFrog calls itself an "artifact repository manager" — a place to store and serve these.</p>
+      <p>Anything your build produces or consumes that isn't source code: a <code>.jar</code>, an <code>npm</code> package, a Docker image, a Python wheel, a Helm chart, a compiled <code>.exe</code>. The generic industry word is <strong>artifact</strong>. JFrog calls itself an "artifact repository manager" - a place to store and serve these.</p>
     </div>
 
     <p class="prose">Without a central system, teams hit four recurring problems:</p>
     <div class="cards">
       <div class="card"><span class="card-num">01</span><h3>Where do builds get dependencies?</h3><p>Everyone pulls directly from the public internet (npm registry, Docker Hub, Maven Central). It's slow, breaks when those sites are down, and you have no control over what enters your builds.</p></div>
       <div class="card"><span class="card-num">02</span><h3>Where do <em>our</em> builds go?</h3><p>You compile something internally. Where does it live so other teams and your CI/CD can reliably grab the exact version? Email and shared drives don't scale.</p></div>
-      <div class="card"><span class="card-num">03</span><h3>Is any of it dangerous?</h3><p>A public package might carry a known vulnerability (a <strong>CVE</strong>) or a banned open-source license. You need to know <em>before</em> it reaches production — not after a breach.</p></div>
+      <div class="card"><span class="card-num">03</span><h3>Is any of it dangerous?</h3><p>A public package might carry a known vulnerability (a <strong>CVE</strong>) or a banned open-source license. You need to know <em>before</em> it reaches production - not after a breach.</p></div>
       <div class="card"><span class="card-num">04</span><h3>Can we prove what's inside?</h3><p>Auditors and customers increasingly ask: "List every component in this release." That list is called an <strong>SBOM</strong>. Producing it by hand is impossible.</p></div>
     </div>
 
     <div class="split">
-      <div class="split-item"><span class="tag tag-art">Artifactory</span><p>solves problems <b>1, 2 &amp; 4</b> — it's the single, trusted home for all binaries flowing in and out.</p></div>
-      <div class="split-item"><span class="tag tag-xray">Xray</span><p>solves problem <b>3</b> (and helps with 4) — it continuously scans everything Artifactory stores for vulnerabilities and license risks.</p></div>
+      <div class="split-item"><span class="tag tag-art">Artifactory</span><p>solves problems <b>1, 2 &amp; 4</b> - it's the single, trusted home for all binaries flowing in and out.</p></div>
+      <div class="split-item"><span class="tag tag-xray">Xray</span><p>solves problem <b>3</b> (and helps with 4) - it continuously scans everything Artifactory stores for vulnerabilities and license risks.</p></div>
     </div>
-    <p class="prose muted">They are designed to work together: Artifactory is the warehouse, Xray is the security inspector standing inside it. <a href="https://jfrog.com/blog/what-is-artifactory-jfrog/" target="_blank" rel="noopener">JFrog — What is Artifactory</a>.</p>
+    <p class="prose muted">They are designed to work together: Artifactory is the warehouse, Xray is the security inspector standing inside it. <a href="https://jfrog.com/blog/what-is-artifactory-jfrog/" target="_blank" rel="noopener">JFrog - What is Artifactory</a>.</p>
   </section>
 
   <!-- GLOSSARY -->
@@ -80,13 +80,13 @@
     <div class="glossary">
       <div class="gloss"><dt>Artifact / Binary</dt><dd>Any built/downloaded file: a package, image, library. The thing being stored.</dd></div>
       <div class="gloss"><dt>Repository</dt><dd>A named container inside Artifactory that holds artifacts of one package type (e.g. a Docker repo, an npm repo).</dd></div>
-      <div class="gloss"><dt>Package type</dt><dd>The ecosystem format — Docker, Maven, npm, PyPI, Helm, etc. Artifactory "speaks" each one natively.</dd></div>
+      <div class="gloss"><dt>Package type</dt><dd>The ecosystem format - Docker, Maven, npm, PyPI, Helm, etc. Artifactory "speaks" each one natively.</dd></div>
       <div class="gloss"><dt>Registry</dt><dd>The package-ecosystem word for a repository (e.g. "Docker registry"). Same idea.</dd></div>
       <div class="gloss"><dt>Dependency</dt><dd>A third-party artifact your code needs to build or run.</dd></div>
-      <div class="gloss"><dt>CVE</dt><dd>Common Vulnerabilities &amp; Exposures — a globally unique ID for a known security flaw, e.g. <code>CVE-2021-44228</code> (Log4Shell).</dd></div>
-      <div class="gloss"><dt>SCA</dt><dd>Software Composition Analysis — scanning the open-source pieces of your software for risk. This is Xray's core job.</dd></div>
-      <div class="gloss"><dt>SBOM</dt><dd>Software Bill of Materials — a complete, machine-readable inventory of every component in a release (formats: SPDX, CycloneDX).</dd></div>
-      <div class="gloss"><dt>JPD</dt><dd>JFrog Platform Deployment — one running instance of the JFrog platform (your server / cloud tenant).</dd></div>
+      <div class="gloss"><dt>CVE</dt><dd>Common Vulnerabilities &amp; Exposures - a globally unique ID for a known security flaw, e.g. <code>CVE-2021-44228</code> (Log4Shell).</dd></div>
+      <div class="gloss"><dt>SCA</dt><dd>Software Composition Analysis - scanning the open-source pieces of your software for risk. This is Xray's core job.</dd></div>
+      <div class="gloss"><dt>SBOM</dt><dd>Software Bill of Materials - a complete, machine-readable inventory of every component in a release (formats: SPDX, CycloneDX).</dd></div>
+      <div class="gloss"><dt>JPD</dt><dd>JFrog Platform Deployment - one running instance of the JFrog platform (your server / cloud tenant).</dd></div>
       <div class="gloss"><dt>build-info</dt><dd>Metadata Artifactory records about a build: which artifacts, which dependencies, which environment. Enables traceability.</dd></div>
       <div class="gloss"><dt>Promotion</dt><dd>Moving an artifact from one repo to the next as it passes quality gates (dev → staging → release).</dd></div>
       <div class="gloss"><dt>Watch + Policy</dt><dd>Xray's enforcement pair: a Policy defines the rules, a Watch says where to apply them. (Detailed later.)</dd></div>
@@ -97,7 +97,7 @@
   <section id="artifactory" class="section">
     <span class="kicker kicker-art">Artifactory</span>
     <h2>What Artifactory actually is</h2>
-    <p class="prose"><strong>JFrog Artifactory is a universal binary repository manager</strong> — one central place to store, version, secure and serve every artifact your organization produces or depends on. "Universal" means it natively supports 40+ package formats (Docker, Maven, npm, PyPI, Helm, NuGet, Go, Terraform, even ML models) at the same time. <a href="https://jfrog.com/artifactory/" target="_blank" rel="noopener">JFrog Artifactory</a>.</p>
+    <p class="prose"><strong>JFrog Artifactory is a universal binary repository manager</strong> - one central place to store, version, secure and serve every artifact your organization produces or depends on. "Universal" means it natively supports 40+ package formats (Docker, Maven, npm, PyPI, Helm, NuGet, Go, Terraform, even ML models) at the same time. <a href="https://jfrog.com/artifactory/" target="_blank" rel="noopener">JFrog Artifactory</a>.</p>
 
     <div class="analogy">
       <span class="analogy-icon" aria-hidden="true">📦</span>
@@ -148,10 +148,10 @@
       <table class="datatable">
         <thead><tr><th>Type</th><th>What it does</th><th>Can you upload to it?</th><th>Real-world use</th></tr></thead>
         <tbody>
-          <tr><td><span class="pill pill-local">Local</span></td><td>Physically stores artifacts <em>your</em> org creates internally.</td><td><b class="yes">Yes</b> — this is your deploy target.</td><td>Your CI pushes built Docker images, release JARs, internal libraries here.</td></tr>
-          <tr><td><span class="pill pill-remote">Remote</span></td><td>A caching <em>proxy</em> for an external registry. Fetches on demand, caches locally.</td><td><b class="no">No</b> — artifacts arrive by proxying.</td><td>A proxy of Docker Hub or npm registry so builds are fast and survive outages.</td></tr>
+          <tr><td><span class="pill pill-local">Local</span></td><td>Physically stores artifacts <em>your</em> org creates internally.</td><td><b class="yes">Yes</b> - this is your deploy target.</td><td>Your CI pushes built Docker images, release JARs, internal libraries here.</td></tr>
+          <tr><td><span class="pill pill-remote">Remote</span></td><td>A caching <em>proxy</em> for an external registry. Fetches on demand, caches locally.</td><td><b class="no">No</b> - artifacts arrive by proxying.</td><td>A proxy of Docker Hub or npm registry so builds are fast and survive outages.</td></tr>
           <tr><td><span class="pill pill-virtual">Virtual</span></td><td>Aggregates many local + remote repos under <em>one URL</em>. Resolves in priority order.</td><td><b class="partial">Via default deploy target</b> (points to a local).</td><td>The single endpoint your developers configure. Hides internal/external complexity.</td></tr>
-          <tr><td><span class="pill pill-fed">Federated</span></td><td>A local repo auto-mirrored bi-directionally across multiple sites (JPDs).</td><td><b class="yes">Yes</b> — like a local, but synced.</td><td>Global teams (London ↔ Tokyo) sharing one source of truth. Enterprise tier.</td></tr>
+          <tr><td><span class="pill pill-fed">Federated</span></td><td>A local repo auto-mirrored bi-directionally across multiple sites (JPDs).</td><td><b class="yes">Yes</b> - like a local, but synced.</td><td>Global teams (London ↔ Tokyo) sharing one source of truth. Enterprise tier.</td></tr>
         </tbody>
       </table>
     </div>
@@ -191,7 +191,7 @@
 
     <div class="callout callout-q">
       <p class="callout-title">What's "promotion"?</p>
-      <p>You typically have separate repos per maturity stage: <code>dev-local</code> → <code>staging-local</code> → <code>release-local</code>. Promotion = moving (or copying) an artifact up a stage once it passes tests and scans. Same binary, no rebuild — so what you tested is exactly what ships. Full walkthrough on the <a href="build-promotion.html">Build promotion</a> page.</p>
+      <p>You typically have separate repos per maturity stage: <code>dev-local</code> → <code>staging-local</code> → <code>release-local</code>. Promotion = moving (or copying) an artifact up a stage once it passes tests and scans. Same binary, no rebuild - so what you tested is exactly what ships. Full walkthrough on the <a href="build-promotion.html">Build promotion</a> page.</p>
     </div>
   </section>
 
@@ -199,7 +199,7 @@
   <section id="packages" class="section">
     <span class="kicker kicker-art">Artifactory</span>
     <h2>Package types it supports</h2>
-    <p class="prose">"Universal" is the selling point: 40+ ecosystems, one platform. You don't need them all — pick the ones your stack uses. Here are the common ones a DevOps team touches. <a href="https://docs.jfrog.com/artifactory/docs/supported-package-types" target="_blank" rel="noopener">Full list</a>.</p>
+    <p class="prose">"Universal" is the selling point: 40+ ecosystems, one platform. You don't need them all - pick the ones your stack uses. Here are the common ones a DevOps team touches. <a href="https://docs.jfrog.com/artifactory/docs/supported-package-types" target="_blank" rel="noopener">Full list</a>.</p>
     <div class="chips">
       <span class="chip">Docker / OCI</span><span class="chip">Helm</span><span class="chip">Maven</span><span class="chip">Gradle</span><span class="chip">npm</span><span class="chip">PyPI</span><span class="chip">Go</span><span class="chip">NuGet</span><span class="chip">Cargo (Rust)</span><span class="chip">Conan (C++)</span><span class="chip">Debian</span><span class="chip">RPM / YUM</span><span class="chip">Terraform</span><span class="chip">Conda</span><span class="chip">Hugging Face (ML)</span><span class="chip">RubyGems</span><span class="chip">Generic (anything)</span>
     </div>
@@ -213,20 +213,20 @@
   <section id="xray" class="section">
     <span class="kicker kicker-x">Xray</span>
     <h2>What Xray actually is</h2>
-    <p class="prose"><strong>JFrog Xray is a Software Composition Analysis (SCA) tool.</strong> It scans everything Artifactory stores — packages, container images, builds — to detect security vulnerabilities, malicious packages, license risks, and operational issues. It's natively integrated with Artifactory, so binary scanning turns on with a single checkbox. <a href="https://docs.jfrog.com/security/docs/xray" target="_blank" rel="noopener">JFrog Xray docs</a>.</p>
+    <p class="prose"><strong>JFrog Xray is a Software Composition Analysis (SCA) tool.</strong> It scans everything Artifactory stores - packages, container images, builds - to detect security vulnerabilities, malicious packages, license risks, and operational issues. It's natively integrated with Artifactory, so binary scanning turns on with a single checkbox. <a href="https://docs.jfrog.com/security/docs/xray" target="_blank" rel="noopener">JFrog Xray docs</a>.</p>
 
     <div class="analogy analogy-x">
       <span class="analogy-icon" aria-hidden="true">🔍</span>
       <div>
         <p class="analogy-title">One-sentence analogy</p>
-        <p>If Artifactory is the warehouse, Xray is the <strong>security inspector living inside it</strong> — X-raying every box that arrives, cross-checking it against a global database of known threats, and raising an alarm (or locking the door) when something dangerous is found.</p>
+        <p>If Artifactory is the warehouse, Xray is the <strong>security inspector living inside it</strong> - X-raying every box that arrives, cross-checking it against a global database of known threats, and raising an alarm (or locking the door) when something dangerous is found.</p>
       </div>
     </div>
 
     <div class="cards cards-x">
       <div class="card"><h3>🛡️ Vulnerabilities</h3><p>Matches components against CVE databases (NVD, GitHub, vendor feeds + JFrog's own security research) to find known flaws.</p></div>
       <div class="card"><h3>⚖️ License compliance</h3><p>Flags open-source licenses your org bans or must track (e.g. GPL in a proprietary product).</p></div>
-      <div class="card"><h3>🐛 Malicious packages</h3><p>Detects deliberately poisoned packages — including malicious ML models on Hugging Face.</p></div>
+      <div class="card"><h3>🐛 Malicious packages</h3><p>Detects deliberately poisoned packages - including malicious ML models on Hugging Face.</p></div>
       <div class="card"><h3>📋 SBOM &amp; impact</h3><p>Generates a full Software Bill of Materials and shows the impact graph of any flaw across your components.</p></div>
     </div>
     <p class="prose muted">Sources: <a href="https://cloudsecurity.org/tool/jfrog-xray" target="_blank" rel="noopener">Xray architecture overview</a>, <a href="https://jfrog.com/help/r/jfrog-security-user-guide/products/xray/features-and-capabilities/sca/sbom" target="_blank" rel="noopener">JFrog SBOM</a>.</p>
@@ -236,10 +236,10 @@
   <section id="xray-how" class="section">
     <span class="kicker kicker-x">Xray</span>
     <h2>How scanning actually works</h2>
-    <p class="prose">Xray's superpower is <strong>deep recursive scanning</strong>. It doesn't just look at your top-level package — it peels open every layer: dependencies, dependencies-of-dependencies, files inside Docker layers, archives inside archives. <a href="https://jfrog.com/article/impact-analysis/" target="_blank" rel="noopener">JFrog Impact Analysis</a>.</p>
+    <p class="prose">Xray's superpower is <strong>deep recursive scanning</strong>. It doesn't just look at your top-level package - it peels open every layer: dependencies, dependencies-of-dependencies, files inside Docker layers, archives inside archives. <a href="https://jfrog.com/article/impact-analysis/" target="_blank" rel="noopener">JFrog Impact Analysis</a>.</p>
 
     <figure class="diagram diagram-x" aria-label="Deep recursive scanning diagram">
-      <p class="diag-label center">Deep recursive scan — peeling the onion</p>
+      <p class="diag-label center">Deep recursive scan - peeling the onion</p>
       <div class="onion">
         <div class="onion-layer l1"><span>Your Docker image</span>
           <div class="onion-layer l2"><span>Base OS layer</span>
@@ -258,7 +258,7 @@
     <ol class="steps">
       <li><b>Index.</b> When a repo is marked for Xray, every artifact is broken into its component graph and indexed.</li>
       <li><b>Scan.</b> Each component is matched against the vulnerability + license databases.</li>
-      <li><b>Continuous re-check.</b> When a <em>new</em> CVE is published, Xray re-evaluates already-stored artifacts — no rescan needed. This is why it catches yesterday's "safe" image today.</li>
+      <li><b>Continuous re-check.</b> When a <em>new</em> CVE is published, Xray re-evaluates already-stored artifacts - no rescan needed. This is why it catches yesterday's "safe" image today.</li>
       <li><b>Report &amp; enforce.</b> Findings appear as <em>violations</em> (when they break a policy) with severity, affected components, and remediation (which version fixes it). <a href="https://docs.jfrog.com/security/docs/understanding-and-analyzing-xray-scan-results-p" target="_blank" rel="noopener">Understanding scan results</a>.</li>
     </ol>
 
@@ -266,7 +266,7 @@
       <table class="datatable">
         <thead><tr><th>Where you can trigger a scan</th><th>How</th><th>Best for</th></tr></thead>
         <tbody>
-          <tr><td>Inside Artifactory (automatic)</td><td>Enable Xray indexing on a repo — scans on upload</td><td>Continuous coverage of everything stored</td></tr>
+          <tr><td>Inside Artifactory (automatic)</td><td>Enable Xray indexing on a repo - scans on upload</td><td>Continuous coverage of everything stored</td></tr>
           <tr><td>CI/CD pipeline</td><td><code>jf build-scan</code> / <code>jf scan</code></td><td>Failing a build before bad code ships</td></tr>
           <tr><td>Local machine (shift-left)</td><td><code>jf scan</code> on source, <code>jf docker scan</code> on an image</td><td>Catching issues before you even commit</td></tr>
           <tr><td>IDE / Pull request</td><td>JFrog IDE plugins &amp; Frogbot</td><td>Instant developer feedback + autofix PRs</td></tr>
@@ -322,7 +322,7 @@
       <span class="sev sev-low">Low</span>
       <span class="sev sev-unknown">Unknown</span>
     </div>
-    <p class="prose muted">A common starter policy: "generate violations for <b>High + Critical</b> security issues, but only when a fixed version is available" — so you're not alerted on problems you can't yet fix. <a href="https://stackoverflow.com/questions/75474890/jfrog-xray-violations-should-not-occure-for-libraries-where-there-is-no-fix-vers" target="_blank" rel="noopener">Stack Overflow on fix-version rule</a>.</p>
+    <p class="prose muted">A common starter policy: "generate violations for <b>High + Critical</b> security issues, but only when a fixed version is available" - so you're not alerted on problems you can't yet fix. <a href="https://stackoverflow.com/questions/75474890/jfrog-xray-violations-should-not-occure-for-libraries-where-there-is-no-fix-vers" target="_blank" rel="noopener">Stack Overflow on fix-version rule</a>.</p>
   </section>
 
   <!-- LABS -->
@@ -339,13 +339,13 @@
       </div>
 
       <div class="tab-panel active" role="tabpanel" data-panel="cloud">
-        <p class="panel-intro"><b>Fastest path to a working platform.</b> JFrog runs a free cloud tier (AWS/Azure/GCP) — no install, ready in minutes. Best first stop. <a href="https://jfrog.com/start-free/" target="_blank" rel="noopener">Start free</a>.</p>
+        <p class="panel-intro"><b>Fastest path to a working platform.</b> JFrog runs a free cloud tier (AWS/Azure/GCP) - no install, ready in minutes. Best first stop. <a href="https://jfrog.com/start-free/" target="_blank" rel="noopener">Start free</a>.</p>
         <ol class="lab-steps">
           <li><span class="ls-n">1</span><div><b>Sign up for the free cloud subscription.</b> Go to <a href="https://jfrog.com/start-free/" target="_blank" rel="noopener">jfrog.com/start-free</a> → choose Cloud (free). You get a tenant like <code>yourname.jfrog.io</code> with Artifactory + Xray. Free tier: ~2&nbsp;GB storage, 10&nbsp;GB transfer. <a href="https://devops.com/jfrog-adds-free-devops-tier-in-the-cloud/" target="_blank" rel="noopener">Free tier announcement</a>.</div></li>
           <li><span class="ls-n">2</span><div><b>Log in to the web UI.</b> Explore the two main tabs: <em>Application</em> (browse repos/artifacts) and <em>Administration</em> (create repos, configure Xray).</div></li>
           <li><span class="ls-n">3</span><div><b>Create your first repositories.</b> Administration → Repositories → <b>+ Add Repository</b>. Make a <span class="pill pill-local">Local</span> Docker repo (<code>docker-local</code>), a <span class="pill pill-remote">Remote</span> proxy of Docker Hub (<code>docker-remote</code>), and a <span class="pill pill-virtual">Virtual</span> repo combining both (<code>docker</code>). <a href="https://medium.com/@vniranjan251203/jfrog-artifactory-and-maven-package-type-2fe0af1765b0" target="_blank" rel="noopener">Repo creation walkthrough</a>.</div></li>
           <li><span class="ls-n">4</span><div><b>Connect the CLI.</b> Install JFrog CLI (see the CLI tab) then run <code>jf c add</code> and paste your <code>*.jfrog.io</code> URL + a token. Verify with <code>jf rt ping</code>.</div></li>
-          <li><span class="ls-n">5</span><div><b>Push an image.</b> <code>jf docker push yourname.jfrog.io/docker-local/demo:1.0</code> — then find it in the UI under your local repo.</div></li>
+          <li><span class="ls-n">5</span><div><b>Push an image.</b> <code>jf docker push yourname.jfrog.io/docker-local/demo:1.0</code> - then find it in the UI under your local repo.</div></li>
           <li><span class="ls-n">6</span><div><b>Turn on Xray.</b> Administration → Xray → <b>Indexed Resources</b> → add <code>docker-local</code>. The image scans automatically.</div></li>
           <li><span class="ls-n">7</span><div><b>Create a Policy + Watch.</b> Administration → Xray → <b>Watches &amp; Policies</b>. Make a Security policy (rule: severity ≥ High, action: notify) and a Watch targeting <code>docker-local</code>. <a href="https://www.youtube.com/watch?v=ztcDI47FnmA" target="_blank" rel="noopener">Policies/watches video</a>.</div></li>
           <li><span class="ls-n">8</span><div><b>Read the results.</b> Open the artifact → <em>Xray</em> tab. Review vulnerabilities by severity, affected components, and fix versions. You've completed the loop. 🎉</div></li>
@@ -355,27 +355,27 @@
 
       <div class="tab-panel" role="tabpanel" data-panel="docker">
         <p class="panel-intro"><b>Run the whole platform on your Mac (OrbStack/Docker).</b> You'll see exactly what services make up Artifactory + Xray. Requires Docker Engine 25+ &amp; Docker Compose v2; ARM64 (Apple Silicon) is supported via Docker. <a href="https://jfrog.com/start-free/install/" target="_blank" rel="noopener">Install guide</a>.</p>
-        <div class="callout callout-q"><p class="callout-title">Heads up on resources</p><p>The full platform (Artifactory + Xray + PostgreSQL + RabbitMQ) wants ~4 CPU / 8&nbsp;GB RAM. Your 8&nbsp;GB Mac setup is the realistic minimum — close other heavy apps.</p></div>
+        <div class="callout callout-q"><p class="callout-title">Heads up on resources</p><p>The full platform (Artifactory + Xray + PostgreSQL + RabbitMQ) wants ~4 CPU / 8&nbsp;GB RAM. Your 8&nbsp;GB Mac setup is the realistic minimum - close other heavy apps.</p></div>
         <ol class="lab-steps">
           <li><span class="ls-n">1</span><div><b>Download the trial Docker-Compose bundle.</b><pre class="code"><code>curl -L "https://releases.jfrog.io/artifactory/jfrog-prox/org/artifactory/pro/docker/jfrog-platform-trial-prox/[RELEASE]/jfrog-platform-trial-prox-[RELEASE]-compose.tar.gz" -o jfrog-compose.tar.gz</code></pre><a href="https://jfrog.com/start-free/install/" target="_blank" rel="noopener">Source</a></div></li>
           <li><span class="ls-n">2</span><div><b>Extract &amp; enter the directory.</b><pre class="code"><code>tar -xvf jfrog-compose.tar.gz
 cd jfrog-platform-trial-prox-*</code></pre></div></li>
           <li><span class="ls-n">3</span><div><b>Run the config script</b> (sets up folder structure + the <code>.env</code> file Compose uses). Follow its prompts.</div></li>
-          <li><span class="ls-n">4</span><div><b>Start everything.</b><pre class="code"><code>docker compose -p trial-pro up -d</code></pre>Give it a few minutes — Xray boots after Artifactory and PostgreSQL are healthy. <a href="https://docs.jfrog.com/installation/docs/installing-xray" target="_blank" rel="noopener">Xray install steps</a>.</div></li>
-          <li><span class="ls-n">5</span><div><b>Open the UI.</b> Browse to <code>http://localhost:8082</code>. Default login <code>admin</code> / <code>password</code> — change it immediately.</div></li>
+          <li><span class="ls-n">4</span><div><b>Start everything.</b><pre class="code"><code>docker compose -p trial-pro up -d</code></pre>Give it a few minutes - Xray boots after Artifactory and PostgreSQL are healthy. <a href="https://docs.jfrog.com/installation/docs/installing-xray" target="_blank" rel="noopener">Xray install steps</a>.</div></li>
+          <li><span class="ls-n">5</span><div><b>Open the UI.</b> Browse to <code>http://localhost:8082</code>. Default login <code>admin</code> / <code>password</code> - change it immediately.</div></li>
           <li><span class="ls-n">6</span><div><b>Apply your free license.</b> Paste the license key from your JFrog account to unlock Xray.</div></li>
-          <li><span class="ls-n">7</span><div><b>From here, follow Cloud steps 3–8</b> — create local/remote/virtual repos, push an image, enable Xray indexing, set a policy + watch, read results. The UI is identical.</div></li>
+          <li><span class="ls-n">7</span><div><b>From here, follow Cloud steps 3-8</b> - create local/remote/virtual repos, push an image, enable Xray indexing, set a policy + watch, read results. The UI is identical.</div></li>
           <li><span class="ls-n">8</span><div><b>Tear down cleanly.</b><pre class="code"><code>docker compose -p trial-pro down</code></pre>Add <code>-v</code> only if you want to wipe the data volumes too.</div></li>
         </ol>
         <p class="prose muted">Prefer Kubernetes? See <a href="kubernetes-helm.html">Kubernetes / Helm setup</a> for installing Artifactory on a cluster with the JFrog Helm charts.</p>
       </div>
 
       <div class="tab-panel" role="tabpanel" data-panel="concepts">
-        <p class="panel-intro"><b>For when you don't want to run a server — just learn the commands &amp; integration patterns.</b> The JFrog CLI binary is <code>jf</code>. One tool drives Artifactory and Xray. <a href="https://docs.jfrog.com/integrations/docs/cli-command-summaries" target="_blank" rel="noopener">CLI summaries</a>.</p>
+        <p class="panel-intro"><b>For when you don't want to run a server - just learn the commands &amp; integration patterns.</b> The JFrog CLI binary is <code>jf</code>. One tool drives Artifactory and Xray. <a href="https://docs.jfrog.com/integrations/docs/cli-command-summaries" target="_blank" rel="noopener">CLI summaries</a>.</p>
         <ol class="lab-steps">
           <li><span class="ls-n">1</span><div><b>Install the CLI</b> (macOS, Homebrew):<pre class="code"><code>brew install jfrog-cli</code></pre>Or one-liner: <code>curl -fL https://install-cli.jfrog.io | sh</code>. Verify: <code>jf --version</code>.</div></li>
           <li><span class="ls-n">2</span><div><b>Configure a server connection.</b><pre class="code"><code>jf c add my-jpd --url=https://yourname.jfrog.io --interactive</code></pre>Use an access token, not a password. Test: <code>jf rt ping</code>.</div></li>
-          <li><span class="ls-n">3</span><div><b>Scan your source code (shift-left)</b> — no upload needed:<pre class="code"><code>jf scan .</code></pre>Scans the dependencies in the current project against Xray. <a href="https://github.com/jfrog/documentation/blob/main/jfrog-applications/jfrog-applications/jfrog-cli/cli-for-jfrog-security/how-tos/scan-your-source-code.md" target="_blank" rel="noopener">Source-scan docs</a>.</div></li>
+          <li><span class="ls-n">3</span><div><b>Scan your source code (shift-left)</b> - no upload needed:<pre class="code"><code>jf scan .</code></pre>Scans the dependencies in the current project against Xray. <a href="https://github.com/jfrog/documentation/blob/main/jfrog-applications/jfrog-applications/jfrog-cli/cli-for-jfrog-security/how-tos/scan-your-source-code.md" target="_blank" rel="noopener">Source-scan docs</a>.</div></li>
           <li><span class="ls-n">4</span><div><b>Scan a local Docker image:</b><pre class="code"><code>jf docker scan my-app:1.0.0</code></pre>First run downloads ~100&nbsp;MB of Xray scanner binaries. <a href="https://docs.jfrog.com/artifactory/docs/jf-docker" target="_blank" rel="noopener">jf docker docs</a>.</div></li>
           <li><span class="ls-n">5</span><div><b>Scan an artifact already in Artifactory, against a watch:</b><pre class="code"><code>jf xr scan --target "docker-local/demo:1.0" --watches "my-watch"</code></pre><a href="https://deepwiki.com/jfrog/jfrog-cli/3.2-xray-commands" target="_blank" rel="noopener">Xray CLI commands</a>.</div></li>
           <li><span class="ls-n">6</span><div><b>Wire it into GitHub Actions</b> (fail the build on Critical issues):<pre class="code"><code>- name: Security Scan

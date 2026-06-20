@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-get_oauth_token.py — one-time helper to mint an OAuth refresh token so the sync
+get_oauth_token.py - one-time helper to mint an OAuth refresh token so the sync
 can act as YOU (your personal Google account), avoiding the service-account
 zero-quota problem.
 

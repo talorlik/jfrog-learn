@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-render_diagrams.py — Render each JFrog Learn page's CSS/HTML <figure> diagrams to
+render_diagrams.py - Render each JFrog Learn page's CSS/HTML <figure> diagrams to
 high-DPI PNG images using headless Chromium (Playwright) + the site's real
 assets/style.css, so the diagrams look exactly like the live website.
 

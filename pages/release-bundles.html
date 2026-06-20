@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Release Bundles & Distribution — JFrog Learn</title>
+<title>Release Bundles & Distribution - JFrog Learn</title>
 <meta name="description" content="Immutable, signed collections of artifacts and how JFrog Distribution ships them to edge nodes and air-gapped sites with verifiable provenance." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -36,22 +36,22 @@
     <nav class="breadcrumb"><a href="../index.html">Home</a><span class="sep">/</span><span>Release Bundles & Distribution</span></nav>
     <div class="page-badges"><span class="lvl lvl-art">Artifactory</span><span class="lvl lvl-xray">Supply chain</span><span class="lvl">Deep-dive</span></div>
     <h1>Release Bundles &amp; Distribution</h1>
-    <p class="lede">A Release Bundle is a sealed, signed manifest of exactly which artifacts make up a release. JFrog Distribution then ships that bundle out to edge nodes and remote sites — so what arrives is provably identical to what you signed.</p>
+    <p class="lede">A Release Bundle is a sealed, signed manifest of exactly which artifacts make up a release. JFrog Distribution then ships that bundle out to edge nodes and remote sites - so what arrives is provably identical to what you signed.</p>
   </header>
 
 
   <section id="problem" class="section">
     <span class="kicker kicker-art">Concept</span>
     <h2>The problem Release Bundles solve</h2>
-    <p class="prose">Promotion moves binaries <em>inside</em> one platform. But shipping a release <em>out</em> — to a customer site, an edge location, or an <b>air-gapped network</b> (a network with no internet connection at all, for security) — raises new questions: which exact files belong to "v2.4.0"? Were any swapped in transit? Can the receiving side prove <b>provenance</b> (a verifiable record of where each file came from and that it wasn't altered)? A loose folder of artifacts answers none of these.</p>
-    <p class="prose">A <strong>Release Bundle</strong> is the answer: an <em>immutable</em> (can never be changed after creation), <em>signed</em> specification of the precise set of artifacts that make up a release, with a checksum-verified <b>manifest</b> (the packing list &mdash; it names every file and its checksum fingerprint). <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/release-lifecycle-management" target="_blank" rel="noopener">JFrog — Release Lifecycle Management</a>.</p>
+    <p class="prose">Promotion moves binaries <em>inside</em> one platform. But shipping a release <em>out</em> - to a customer site, an edge location, or an <b>air-gapped network</b> (a network with no internet connection at all, for security) - raises new questions: which exact files belong to "v2.4.0"? Were any swapped in transit? Can the receiving side prove <b>provenance</b> (a verifiable record of where each file came from and that it wasn't altered)? A loose folder of artifacts answers none of these.</p>
+    <p class="prose">A <strong>Release Bundle</strong> is the answer: an <em>immutable</em> (can never be changed after creation), <em>signed</em> specification of the precise set of artifacts that make up a release, with a checksum-verified <b>manifest</b> (the packing list - it names every file and its checksum fingerprint). <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/release-lifecycle-management" target="_blank" rel="noopener">JFrog - Release Lifecycle Management</a>.</p>
   </section>
 
   <section id="bundle" class="section">
     <span class="kicker kicker-x">Definition</span>
     <h2>What's inside a Release Bundle</h2>
     <ul class="feature-list">
-      <li><b>A curated artifact set.</b> You select the artifacts that make up the release — by build, by file path, or by an <b>AQL</b> query (Artifactory Query Language, a JSON-based search language for finding artifacts by name, property, repo, etc.). The bundle records each one's checksum.</li>
+      <li><b>A curated artifact set.</b> You select the artifacts that make up the release - by build, by file path, or by an <b>AQL</b> query (Artifactory Query Language, a JSON-based search language for finding artifacts by name, property, repo, etc.). The bundle records each one's checksum.</li>
       <li><b>Immutability.</b> Once created, the bundle's contents can't change. A new release means a new bundle version.</li>
       <li><b>Cryptographic signing.</b> The bundle manifest is signed with a <b>GPG key</b> (GPG = GNU Privacy Guard, a standard tool for cryptographic signatures). The signer holds a private key; recipients hold the matching public key and use it to confirm the bundle came from you and wasn't tampered with.</li>
       <li><b>Provenance metadata.</b> The bundle carries the source build-info and (optionally) Xray security-scan results, giving the receiver evidence of exactly what was built and what was vetted.</li>
@@ -78,14 +78,14 @@
         <span class="flow-conn">→</span>
         <div class="flow-step"><span class="flow-step-n">4</span><b>Verify &amp; consume</b><small>checksum-checked on arrival</small></div>
       </div>
-      <figcaption>The bundle is created and sealed once, then distributed to one or many targets. Each target verifies signatures and checksums before exposing the artifacts. <a href="https://jfrog.com/help/r/jfrog-distribution-documentation/distributing-release-bundles" target="_blank" rel="noopener">JFrog — Distributing Release Bundles</a>.</figcaption>
+      <figcaption>The bundle is created and sealed once, then distributed to one or many targets. Each target verifies signatures and checksums before exposing the artifacts. <a href="https://jfrog.com/help/r/jfrog-distribution-documentation/distributing-release-bundles" target="_blank" rel="noopener">JFrog - Distributing Release Bundles</a>.</figcaption>
     </figure>
   </section>
 
   <section id="distribution" class="section">
     <span class="kicker kicker-x">Distribution</span>
     <h2>Distribution &amp; edge nodes</h2>
-    <p class="prose"><strong>JFrog Distribution</strong> is the service that takes a signed Release Bundle and delivers it to <strong>edge nodes</strong> — lightweight Artifactory instances positioned close to consumers (a factory floor, a CDN POP, an air-gapped enclave). Edge nodes are read-only consumption points: they receive distributed bundles but aren't general-purpose repositories. <a href="https://jfrog.com/help/r/jfrog-distribution-documentation/jfrog-distribution" target="_blank" rel="noopener">JFrog Distribution docs</a>.</p>
+    <p class="prose"><strong>JFrog Distribution</strong> is the service that takes a signed Release Bundle and delivers it to <strong>edge nodes</strong> - lightweight Artifactory instances positioned close to consumers (a factory floor, a CDN POP, an air-gapped enclave). Edge nodes are read-only consumption points: they receive distributed bundles but aren't general-purpose repositories. <a href="https://jfrog.com/help/r/jfrog-distribution-documentation/jfrog-distribution" target="_blank" rel="noopener">JFrog Distribution docs</a>.</p>
     <div class="table-wrap">
       <table class="datatable">
         <thead><tr><th>Component</th><th>Role</th></tr></thead>
@@ -98,14 +98,14 @@
     </div>
     <div class="callout callout-tip">
       <p class="callout-title">Why edge nodes matter</p>
-      <p>Consumers at the edge pull from a nearby node — fast and resilient — while you keep a single signed source of truth centrally. Air-gapped sites receive the bundle as a verifiable package rather than opening a live connection to your main platform.</p>
+      <p>Consumers at the edge pull from a nearby node - fast and resilient - while you keep a single signed source of truth centrally. Air-gapped sites receive the bundle as a verifiable package rather than opening a live connection to your main platform.</p>
     </div>
   </section>
 
   <section id="cli" class="section">
     <span class="kicker kicker-lab">CLI</span>
     <h2>Create and distribute a bundle (CLI)</h2>
-    <p class="prose">The JFrog CLI exposes release-bundle commands under <code>jf rbc</code> / <code>jf rbu</code> (create/update) and <code>jf rbd</code> (distribute) &mdash; these short names are just aliases for the longer commands below. The conceptual flow: <a href="https://jfrog.com/help/r/jfrog-cli/release-bundles" target="_blank" rel="noopener">JFrog CLI — Release Bundles</a>.</p>
+    <p class="prose">The JFrog CLI exposes release-bundle commands under <code>jf rbc</code> / <code>jf rbu</code> (create/update) and <code>jf rbd</code> (distribute) - these short names are just aliases for the longer commands below. The conceptual flow: <a href="https://jfrog.com/help/r/jfrog-cli/release-bundles" target="_blank" rel="noopener">JFrog CLI - Release Bundles</a>.</p>
     <p class="code-label">Create a signed bundle from a spec, then distribute</p>
     <div class="codeblock"><code><span class="cm"># 1. Create release bundle "my-app" v2.4.0 from a spec file.</span>
 <span class="cm">#    --spec: JSON listing which artifacts to include (by path/AQL)</span>
@@ -117,7 +117,7 @@ jf release-bundle-create my-app 2.4.0 \
 <span class="cm"># 2. Distribute it to every edge node matching the pattern (* is a wildcard)</span>
 jf release-bundle-distribute my-app 2.4.0 \
   --site="edge-eu-*"</code></div>
-    <p class="prose muted">The spec selects artifacts (by AQL/path); the signing key seals the manifest; the distribute step fans it out to matching edge sites. Exact subcommands vary by Release Lifecycle Management version — check the linked CLI reference for your platform.</p>
+    <p class="prose muted">The spec selects artifacts (by AQL/path); the signing key seals the manifest; the distribute step fans it out to matching edge sites. Exact subcommands vary by Release Lifecycle Management version - check the linked CLI reference for your platform.</p>
   </section>
 
   <section id="vs" class="section">

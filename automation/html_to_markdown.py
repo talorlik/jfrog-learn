@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-html_to_markdown.py — Convert a JFrog Learn page (HTML) into clean Markdown that
+html_to_markdown.py - Convert a JFrog Learn page (HTML) into clean Markdown that
 preserves structure (headings, lists, tables, code, callouts) and converts the
 site's CSS/HTML diagrams into Mermaid flowcharts (with an image fallback hook for
 any future diagram that can't be expressed as Mermaid).
@@ -84,7 +84,7 @@ def _node_text(el: Tag) -> str:
         small.extract()
     main = _clean(el.get_text(" "))
     if small_txt:
-        return f"{main} — {small_txt}" if main else small_txt
+        return f"{main} - {small_txt}" if main else small_txt
     return main
 
 
@@ -201,7 +201,7 @@ def bm_to_mermaid(fig: Tag) -> str | None:
             for p in core.find_all(class_=re.compile(r"^pill"))
         ]
         if pills:
-            core_label += " — " + ", ".join(pills)
+            core_label += " - " + ", ".join(pills)
         core_id = _mm_id(counter)
         lines.append(f'    {core_id}["{_mm_label(core_label)}"]')
         for sid in src_ids:
@@ -525,10 +525,10 @@ def render_block(el: Tag) -> str:
         term = render_inline(dt).strip() if dt else ""
         definition = render_inline(dd).strip() if dd else ""
         if term and definition:
-            return f"- **{term}** — {definition}"
+            return f"- **{term}** - {definition}"
         return f"- **{term}**" if term else definition
 
-    # Analogy box: icon + title + body — render like a tip callout
+    # Analogy box: icon + title + body - render like a tip callout
     if "analogy" in cls:
         title_el = el.find(class_="analogy-title")
         title = _clean(title_el.get_text(" ")) if title_el else ""
@@ -544,7 +544,7 @@ def render_block(el: Tag) -> str:
             lines.append(f"> {bl}" if bl else ">")
         return "\n".join(lines)
 
-    # Card: numbered concept card — drop the decorative number, keep heading + body
+    # Card: numbered concept card - drop the decorative number, keep heading + body
     if "card" in cls and "cards" not in cls:
         for num in el.find_all(class_=re.compile(r"card-num")):
             num.decompose()
@@ -558,7 +558,7 @@ def render_block(el: Tag) -> str:
             tag.extract()
         body = render_block_children(el).strip()
         if label and body:
-            return f"**{label}** — {body}"
+            return f"**{label}** - {body}"
         return body or (f"**{label}**" if label else "")
 
     if "table-wrap" in cls:
@@ -574,7 +574,7 @@ def render_block(el: Tag) -> str:
             return f"**{txt}**"
         return txt
 
-    # generic container — recurse
+    # generic container - recurse
     if name in ("div", "section", "article", "main", "aside", "details"):
         return render_block_children(el)
 
@@ -595,7 +595,7 @@ def convert_page(html: str) -> tuple[str, str]:
     h1 = soup.find("h1")
     title = _clean(h1.get_text(" ")) if h1 else ""
     if not title and soup.title:
-        title = _clean(soup.title.get_text()).replace(" — JFrog Learn", "")
+        title = _clean(soup.title.get_text()).replace(" - JFrog Learn", "")
 
     # Locate the main content container; the site uses <main> for page body.
     content = soup.find("main") or soup.find("article") or soup.body

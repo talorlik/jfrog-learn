@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-sync_to_drive.py — Mirror every JFrog Learn content page into Google Drive as a
+sync_to_drive.py - Mirror every JFrog Learn content page into Google Drive as a
 native Google Doc with high fidelity: real headings, native tables, shaded
 monospace code, callouts, and EMBEDDED diagram images that look exactly like the
 website. Plus an auto-rebuilt index Doc. Designed to run in CI on every push to
@@ -9,28 +9,28 @@ main, then have NotebookLM use the Docs as sources.
 How it works (the DOCX pipeline):
   1. render_diagrams.py renders each page's CSS/HTML <figure> to a high-DPI PNG
      using headless Chromium, so diagrams are faithful images (the site has no
-     image files — diagrams are drawn with CSS/HTML).
+     image files - diagrams are drawn with CSS/HTML).
   2. build_docx.py converts each page's HTML into a .docx with those PNGs embedded
      and native Word structure (headings, lists, tables, code, callouts).
   3. This script uploads each .docx to Drive with the Google Doc mimeType so Drive
      CONVERTS it into a native Google Doc. Drive's DOCX importer is its
-     highest-fidelity converter, so structure + embedded images survive well —
+     highest-fidelity converter, so structure + embedded images survive well -
      far better than the old Markdown path, and diagrams finally render.
 
 Why this beats the previous approach: uploading Markdown let Drive's crude
 Markdown importer mangle tables/code, and Mermaid code fences never rendered. A
 .docx carries embedded image bytes and converts cleanly.
 
-Auth & scope (UNCHANGED from before — no re-consent needed):
+Auth & scope (UNCHANGED from before - no re-consent needed):
   OAuth user credentials with the NON-SENSITIVE 'drive.file' scope. The app acts
   as YOU (so Docs count against your own 15 GB quota) and can only see/manage
-  files it creates — so it manages its OWN 'jfrog-learning' folder. Provide a
+  files it creates - so it manages its OWN 'jfrog-learning' folder. Provide a
   single env var GOOGLE_OAUTH_CREDENTIALS containing JSON with client_id,
   client_secret, refresh_token (stored as the GitHub secret of the same name).
   A service account still works only on Workspace/Shared Drives.
 
   NOTE: We do NOT use the Google Docs API, so the 'documents' scope is NOT needed.
-  Embedding images happens inside the .docx before upload — no separate image
+  Embedding images happens inside the .docx before upload - no separate image
   uploads, no extra scope.
 
 Idempotency: the folder is the source of truth. Each run looks up a Doc by exact
@@ -88,8 +88,8 @@ PAGE_ORDER = [
     "kubernetes-helm",
 ]
 
-DOC_NAME_PREFIX = "JFrog Learn — "
-INDEX_DOC_NAME = "JFrog Learn — Index"
+DOC_NAME_PREFIX = "JFrog Learn - "
+INDEX_DOC_NAME = "JFrog Learn - Index"
 
 TOKEN_URI = "https://oauth2.googleapis.com/token"
 
@@ -245,7 +245,7 @@ def build_index_docx(entries: list[dict], out_path: Path) -> Path:
     from docx.shared import Pt
 
     doc = Document()
-    doc.add_heading("JFrog Learn — Index", level=0)
+    doc.add_heading("JFrog Learn - Index", level=0)
     p = doc.add_paragraph()
     p.add_run(
         "Auto-generated index of all JFrog Learn pages, kept in sync with the "
@@ -259,7 +259,7 @@ def build_index_docx(entries: list[dict], out_path: Path) -> Path:
         para = doc.add_paragraph(style="List Number")
         r = para.add_run(e["title"])
         r.bold = True
-        para.add_run("  —  ")
+        para.add_run("  -  ")
         B._add_hyperlink(para, doc_link, "Google Doc")
         para.add_run("  ·  ")
         B._add_hyperlink(para, e["site_url"], "live page")

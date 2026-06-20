@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Kubernetes / Helm setup — JFrog Learn</title>
+<title>Kubernetes / Helm setup - JFrog Learn</title>
 <meta name="description" content="Two angles on JFrog + Kubernetes: install Artifactory on a cluster with the official Helm charts, and use Artifactory as a Helm/OCI chart registry." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -41,7 +41,7 @@
 
   <section id="two" class="section">
     <span class="kicker kicker-art">Orientation</span>
-    <h2>Two distinct goals — don't conflate them</h2>
+    <h2>Two distinct goals - don't conflate them</h2>
     <div class="cards">
       <div class="card"><span class="card-num">A</span><h3>Run Artifactory <em>on</em> K8s</h3><p>Deploy the JFrog Platform itself into a Kubernetes cluster using the official Helm charts. This is an infrastructure/install task.</p></div>
       <div class="card"><span class="card-num">B</span><h3>Use Artifactory <em>as</em> a Helm registry</h3><p>Store and serve your own Helm charts (classic or OCI) from an Artifactory repository. This is a day-to-day usage task.</p></div>
@@ -56,7 +56,7 @@
   <section id="install" class="section">
     <span class="kicker kicker-lab">Goal A</span>
     <h2>Installing Artifactory on Kubernetes with Helm</h2>
-    <p class="prose">JFrog publishes official Helm charts. You add the chart repo, prepare a couple of secrets (master + join keys), then install into a namespace. <a href="https://jfrog.com/help/r/jfrog-installation-setup-documentation/install-artifactory-on-kubernetes-using-helm" target="_blank" rel="noopener">JFrog — Install Artifactory on Kubernetes</a>.</p>
+    <p class="prose">JFrog publishes official Helm charts. You add the chart repo, prepare a couple of secrets (master + join keys), then install into a namespace. <a href="https://jfrog.com/help/r/jfrog-installation-setup-documentation/install-artifactory-on-kubernetes-using-helm" target="_blank" rel="noopener">JFrog - Install Artifactory on Kubernetes</a>.</p>
     <p class="code-label">1) Add the JFrog Helm chart repository</p>
     <div class="codeblock"><code>helm repo add jfrog https://charts.jfrog.io   <span class="cm"># register JFrog's chart repo under the name "jfrog"</span>
 helm repo update                              <span class="cm"># refresh the local list of available charts</span></code></div>
@@ -69,13 +69,13 @@ helm upgrade --install artifactory \
   --set artifactory.joinKey=${JOIN_KEY} \
   --namespace artifactory --create-namespace \
   jfrog/artifactory</code></div>
-    <p class="prose muted"><code>upgrade --install</code> is <b>idempotent</b> — running it once or many times reaches the same result: it installs the first time and upgrades thereafter. ("Idempotent" is a key GitOps property: re-running a command is always safe.) For production, supply a <code>values.yaml</code> file (external database, ingress, persistent volumes) instead of bare <code>--set</code> flags.</p>
+    <p class="prose muted"><code>upgrade --install</code> is <b>idempotent</b> - running it once or many times reaches the same result: it installs the first time and upgrades thereafter. ("Idempotent" is a key GitOps property: re-running a command is always safe.) For production, supply a <code>values.yaml</code> file (external database, ingress, persistent volumes) instead of bare <code>--set</code> flags.</p>
   </section>
 
   <section id="keys" class="section">
     <span class="kicker">Prereq</span>
-    <h2>Master &amp; join keys — generate them first</h2>
-    <p class="prose">The JFrog Platform is made of several small services ("microservices") that must trust each other. They authenticate with a shared <strong>join key</strong>, and Artifactory encrypts its stored config with a <strong>master key</strong>. You generate both as random hexadecimal strings and pass them to the chart — ideally as Kubernetes secrets rather than inline on the command line, so they don't leak into your shell history.</p>
+    <h2>Master &amp; join keys - generate them first</h2>
+    <p class="prose">The JFrog Platform is made of several small services ("microservices") that must trust each other. They authenticate with a shared <strong>join key</strong>, and Artifactory encrypts its stored config with a <strong>master key</strong>. You generate both as random hexadecimal strings and pass them to the chart - ideally as Kubernetes secrets rather than inline on the command line, so they don't leak into your shell history.</p>
     <p class="code-label">Generate 32-byte hex keys</p>
     <div class="codeblock"><code><span class="cm"># openssl makes 32 random bytes as hex; export saves each to an env var</span>
 export MASTER_KEY=$(openssl rand -hex 32)
@@ -97,7 +97,7 @@ kubectl create secret generic my-joinkey \
   <section id="registry" class="section">
     <span class="kicker kicker-lab">Goal B</span>
     <h2>Using Artifactory as a Helm chart registry</h2>
-    <p class="prose">Artifactory can host Helm charts in a <span class="pill pill-local">local</span> repo, proxy public charts via a <span class="pill pill-remote">remote</span> repo, and aggregate both behind a <span class="pill pill-virtual">virtual</span> repo. You then point the Helm client at the virtual repo's API URL. <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/helm-chart-repositories" target="_blank" rel="noopener">JFrog — Helm Chart Repositories</a>.</p>
+    <p class="prose">Artifactory can host Helm charts in a <span class="pill pill-local">local</span> repo, proxy public charts via a <span class="pill pill-remote">remote</span> repo, and aggregate both behind a <span class="pill pill-virtual">virtual</span> repo. You then point the Helm client at the virtual repo's API URL. <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/helm-chart-repositories" target="_blank" rel="noopener">JFrog - Helm Chart Repositories</a>.</p>
     <p class="code-label">Add your Artifactory Helm repo to the Helm client</p>
     <div class="codeblock"><code>helm repo add my-charts \
   https://yourname.jfrog.io/artifactory/api/helm/helm-virtual \
@@ -111,14 +111,14 @@ helm repo update</code></div>
         <span class="flow-conn">→ both behind →</span>
         <div class="flow-step flow-art"><span class="flow-step-n">V</span><b>helm-virtual</b><small>single URL clients use</small></div>
       </div>
-      <figcaption>Clients only ever talk to the <b>virtual</b> repo; Artifactory resolves from local-first then remote. <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/helm-chart-repositories" target="_blank" rel="noopener">JFrog — Helm Chart Repositories</a>.</figcaption>
+      <figcaption>Clients only ever talk to the <b>virtual</b> repo; Artifactory resolves from local-first then remote. <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/helm-chart-repositories" target="_blank" rel="noopener">JFrog - Helm Chart Repositories</a>.</figcaption>
     </figure>
   </section>
 
   <section id="oci" class="section">
     <span class="kicker kicker-lab">Modern</span>
     <h2>OCI: push &amp; pull charts as OCI artifacts</h2>
-    <p class="prose">Modern Helm (v3.8+) treats charts as <strong>OCI artifacts</strong>. <b>OCI</b> (Open Container Initiative) is the open standard that defines how container images are packaged and stored in registries — so "chart as an OCI artifact" means your chart is stored using the exact same mechanism as a Docker image, in the same kind of registry. Artifactory supports this directly, so you can push and pull charts to an OCI-enabled repository. <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/helm-oci-repositories" target="_blank" rel="noopener">JFrog — Helm OCI Repositories</a>.</p>
+    <p class="prose">Modern Helm (v3.8+) treats charts as <strong>OCI artifacts</strong>. <b>OCI</b> (Open Container Initiative) is the open standard that defines how container images are packaged and stored in registries - so "chart as an OCI artifact" means your chart is stored using the exact same mechanism as a Docker image, in the same kind of registry. Artifactory supports this directly, so you can push and pull charts to an OCI-enabled repository. <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/helm-oci-repositories" target="_blank" rel="noopener">JFrog - Helm OCI Repositories</a>.</p>
     <p class="code-label">Package, push, and pull a chart over OCI</p>
     <div class="codeblock"><code><span class="cm"># package your chart folder into a versioned .tgz archive</span>
 helm package ./my-chart            <span class="cm"># → produces my-chart-1.0.0.tgz</span>

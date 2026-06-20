@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-build_docx.py — Convert a JFrog Learn page (HTML) into a structured .docx with
+build_docx.py - Convert a JFrog Learn page (HTML) into a structured .docx with
 native headings, lists, tables, shaded monospace code blocks, callouts, and
 EMBEDDED diagram images (rendered separately by render_diagrams.py).
 
 Why DOCX (not Markdown, not the Docs API): Google Drive's DOCX importer is its
 highest-fidelity converter, so uploading a .docx and letting Drive convert it to
-a Google Doc preserves structure far better than the old Markdown path — and a
+a Google Doc preserves structure far better than the old Markdown path - and a
 .docx embeds image bytes directly, so diagrams travel inside the file. This needs
 only the drive.file scope (no documents scope, no re-consent).
 
@@ -33,8 +33,11 @@ from docx.shared import Pt, RGBColor, Inches
 # ---------------------------------------------------------------------------
 
 CODE_FONT = "Consolas"
-CODE_BG = "F0F0F2"          # light gray shading behind code blocks
-CODE_TEXT = RGBColor(0x1A, 0x1A, 0x1A)
+# Dark code block, matching the live site (.code / .codeblock in style.css):
+#   background #0a0d0b, green monospace text #9fe6ad.
+CODE_BG = "0A0D0B"          # near-black code block background (site .code bg)
+CODE_TEXT = RGBColor(0x9F, 0xE6, 0xAD)   # green monospace text (site .code color)
+CODE_BORDER = "24302A"      # subtle dark border around the code block
 LINK_COLOR = RGBColor(0x1A, 0x57, 0xB7)
 CALLOUT_BG = {
     "callout-tip": "EAF6EC",
@@ -82,14 +85,14 @@ def _cell_shade(cell, fill_hex: str):
     tcPr.append(shd)
 
 
-def _set_cell_border(cell, **kwargs):
+def _set_cell_border(cell, color: str = "C8C8CE", **kwargs):
     tcPr = cell._tc.get_or_add_tcPr()
     borders = OxmlElement("w:tcBorders")
     for edge in ("top", "left", "bottom", "right"):
         el = OxmlElement(f"w:{edge}")
         el.set(qn("w:val"), "single")
         el.set(qn("w:sz"), "4")
-        el.set(qn("w:color"), "C8C8CE")
+        el.set(qn("w:color"), color)
         borders.append(el)
     tcPr.append(borders)
 
@@ -188,12 +191,31 @@ class DocBuilder:
 
     # -- code ---------------------------------------------------------------
     def add_code_block(self, text: str):
+        """Render a code block as a single dark-shaded, bordered table cell.
+
+        Using one cell (not a stack of paragraphs) keeps the block visually
+        unified - a real container with a dark background + border that
+        survives Drive's DOCX import cleanly, matching the site's dark code
+        styling. Each source line is one paragraph inside the cell.
+        """
         text = text.replace("\xa0", " ").rstrip("\n")
-        for i, line in enumerate(text.split("\n")):
-            p = self.doc.add_paragraph()
+        lines = text.split("\n")
+
+        tbl = self.doc.add_table(rows=1, cols=1)
+        tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
+        cell = tbl.rows[0].cells[0]
+        _cell_shade(cell, CODE_BG)
+        _set_cell_border(cell, color=CODE_BORDER)
+
+        # Clear the default empty paragraph, then add one paragraph per line.
+        first = True
+        for line in lines:
+            p = cell.paragraphs[0] if first else cell.add_paragraph()
+            first = False
+            p.text = ""
             p.paragraph_format.space_after = Pt(0)
             p.paragraph_format.space_before = Pt(0)
-            _para_shade(p, CODE_BG)
+            p.paragraph_format.line_spacing = 1.0
             run = p.add_run(line if line else " ")
             run.font.name = CODE_FONT
             run.font.size = Pt(9.5)
@@ -268,7 +290,7 @@ class DocBuilder:
         title = _clean(title_el.get_text(" ")) if title_el else ""
         if title_el:
             title_el.extract()
-        head_txt = " — ".join(x for x in [label, title] if x)
+        head_txt = " - ".join(x for x in [label, title] if x)
         if head_txt:
             p = self.doc.add_paragraph()
             _para_shade(p, bg)
@@ -295,7 +317,7 @@ class DocBuilder:
             r = p.add_run(_clean(dt.get_text(" ")))
             r.bold = True
         if dt and dd:
-            p.add_run(" \u2014 ")
+            p.add_run(" - ")
         if dd:
             emit_inline(p, dd)
 
@@ -498,7 +520,7 @@ def page_title(html: str) -> str:
     if h1 and _clean(h1.get_text(" ")):
         return _clean(h1.get_text(" "))
     if soup.title:
-        return _clean(soup.title.get_text()).replace(" — JFrog Learn", "")
+        return _clean(soup.title.get_text()).replace(" - JFrog Learn", "")
     return "Untitled"
 
 

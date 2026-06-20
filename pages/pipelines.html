@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>JFrog Pipelines — JFrog Learn</title>
+<title>JFrog Pipelines - JFrog Learn</title>
 <meta name="description" content="JFrog's YAML-based CI/CD engine: integrations, resources, steps, and pipeline sources. Build a working pipeline from a Hello World example up." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -35,7 +35,7 @@
     <nav class="breadcrumb"><a href="../index.html">Home</a><span class="sep">/</span><span>JFrog Pipelines</span></nav>
     <div class="page-badges"><span class="lvl lvl-lab">CI/CD</span><span class="lvl lvl-art">Platform</span><span class="lvl">How-to</span></div>
     <h1>JFrog Pipelines</h1>
-    <p class="lede">Pipelines is the platform's native CI/CD engine. You declare resources and steps in a YAML DSL stored in your Git repo, connect it through integrations, and Pipelines runs it on build nodes — with Artifactory and Xray built in.</p>
+    <p class="lede">Pipelines is the platform's native CI/CD engine. You declare resources and steps in a YAML DSL stored in your Git repo, connect it through integrations, and Pipelines runs it on build nodes - with Artifactory and Xray built in.</p>
   </header>
 
 
@@ -46,7 +46,7 @@
       <p class="callout-title">Plain-English glossary for this page</p>
       <p><b>CI/CD</b> = Continuous Integration / Continuous Delivery: automating the build &rarr; test &rarr; ship cycle. <b>DSL</b> = Domain-Specific Language: a small, purpose-built language (here, written in YAML) for describing pipelines. <b>Build node</b> = a machine (or container) that actually runs your pipeline steps. <b>YAML</b> = an indentation-based text config format.</p>
     </div>
-    <p class="prose"><strong>JFrog Pipelines is a CI/CD automation engine built into the JFrog Platform.</strong> You define pipelines in a <strong>YAML-based Pipelines DSL</strong> — a set of key-value files known as a <em>pipeline config</em> — and store them in a Git-compatible source repository (any repo on GitHub, GitLab, etc.). Pipelines syncs from that source, loads your DSL, and runs continuous integration and delivery on build nodes. <a href="https://jfrog.com/help/r/jfrog-pipelines-documentation/creating-pipelines" target="_blank" rel="noopener">JFrog — Creating Pipelines</a>.</p>
+    <p class="prose"><strong>JFrog Pipelines is a CI/CD automation engine built into the JFrog Platform.</strong> You define pipelines in a <strong>YAML-based Pipelines DSL</strong> - a set of key-value files known as a <em>pipeline config</em> - and store them in a Git-compatible source repository (any repo on GitHub, GitLab, etc.). Pipelines syncs from that source, loads your DSL, and runs continuous integration and delivery on build nodes. <a href="https://jfrog.com/help/r/jfrog-pipelines-documentation/creating-pipelines" target="_blank" rel="noopener">JFrog - Creating Pipelines</a>.</p>
     <div class="callout callout-q">
       <p class="callout-title">How is this different from GitHub Actions?</p>
       <p>Both run YAML-defined CI/CD. Pipelines' edge is native integration with Artifactory (build-info, promotion) and Xray (scanning gates) plus centrally-managed, secure integrations and reusable resources. If you already live in the JFrog platform, Pipelines keeps everything in one place. You can also combine it with Jenkins, GitHub Actions, or Azure DevOps.</p>
@@ -60,21 +60,21 @@
       <table class="datatable">
         <thead><tr><th>Concept</th><th>What it is</th></tr></thead>
         <tbody>
-          <tr><td><b>Integration</b></td><td>A stored, secure connection to an external service — GitHub, Artifactory, Kubernetes, etc. You provide the URL endpoint and credentials once; Pipelines stores them centrally.</td></tr>
+          <tr><td><b>Integration</b></td><td>A stored, secure connection to an external service - GitHub, Artifactory, Kubernetes, etc. You provide the URL endpoint and credentials once; Pipelines stores them centrally.</td></tr>
           <tr><td><b>Pipeline source</b></td><td>The Git repo (added via an integration) that holds your YAML DSL. Pipelines auto-syncs whenever you commit a change to the DSL.</td></tr>
-          <tr><td><b>Resource</b></td><td>A source or destination of data used by the pipeline — e.g. a <code>GitRepo</code>, a <code>BuildInfo</code>, an image. Resources connect steps and can trigger them.</td></tr>
+          <tr><td><b>Resource</b></td><td>A source or destination of data used by the pipeline - e.g. a <code>GitRepo</code>, a <code>BuildInfo</code>, an image. Resources connect steps and can trigger them.</td></tr>
           <tr><td><b>Step</b></td><td>A unit of execution (e.g. a <code>Bash</code> step). Steps declare <code>inputResources</code> and <code>inputSteps</code> to express dependencies and ordering.</td></tr>
           <tr><td><b>Pipeline</b></td><td>The named collection of steps and resources that together form a workflow.</td></tr>
         </tbody>
       </table>
     </div>
-    <p class="prose muted">Sources: <a href="https://jfrog.com/help/r/jfrog-pipelines-documentation/pipeline-example-hello-world" target="_blank" rel="noopener">JFrog — Pipeline Hello World</a>, <a href="https://jfrog.com/help/r/jfrog-pipelines-documentation/pipelines-step-by-step" target="_blank" rel="noopener">Pipelines step-by-step</a>.</p>
+    <p class="prose muted">Sources: <a href="https://jfrog.com/help/r/jfrog-pipelines-documentation/pipeline-example-hello-world" target="_blank" rel="noopener">JFrog - Pipeline Hello World</a>, <a href="https://jfrog.com/help/r/jfrog-pipelines-documentation/pipelines-step-by-step" target="_blank" rel="noopener">Pipelines step-by-step</a>.</p>
   </section>
 
   <section id="dsl" class="section">
     <span class="kicker kicker-lab">DSL</span>
     <h2>The YAML DSL: resources + steps</h2>
-    <p class="prose">A pipeline config has two main sections. <strong>Resources</strong> declare the data sources/destinations; <strong>pipelines</strong> declare the steps that act on them. Steps wire together via <code>inputSteps</code> (run after) and <code>inputResources</code> (consume/produce). <a href="https://jfrog.com/help/r/jfrog-pipelines-documentation/pipeline-workflow-examples" target="_blank" rel="noopener">JFrog — Workflow examples</a>.</p>
+    <p class="prose">A pipeline config has two main sections. <strong>Resources</strong> declare the data sources/destinations; <strong>pipelines</strong> declare the steps that act on them. Steps wire together via <code>inputSteps</code> (run after) and <code>inputResources</code> (consume/produce). <a href="https://jfrog.com/help/r/jfrog-pipelines-documentation/pipeline-workflow-examples" target="_blank" rel="noopener">JFrog - Workflow examples</a>.</p>
     <p class="code-label">A step that runs after another step succeeds</p>
     <div class="codeblock"><code>pipelines:
   - name: demo_pipeline
@@ -102,13 +102,13 @@
     <span class="kicker kicker-lab">How-to</span>
     <h2>Standing up your first pipeline</h2>
     <ol class="steps">
-      <li><b>Sign in</b> to the JFrog Platform with your Artifactory credentials. On JFrog Cloud, a default dynamic node pool is provisioned for you (a "node pool" is a group of build machines that scale up/down on demand), so you already have build nodes — nothing to install.</li>
+      <li><b>Sign in</b> to the JFrog Platform with your Artifactory credentials. On JFrog Cloud, a default dynamic node pool is provisioned for you (a "node pool" is a group of build machines that scale up/down on demand), so you already have build nodes - nothing to install.</li>
       <li><b>Add a GitHub integration.</b> Administration → Pipelines → <b>Integrations</b> → add a GitHub integration with a personal access token (a GitHub token that grants API access) that has the <code>repo</code> + <code>admin</code> <b>scopes</b> (a "scope" is a permission the token is allowed to use).</li>
       <li><b>Add a pipeline source.</b> Point Pipelines at the repo (and branch) holding your YAML DSL, connected through that integration. Pipelines syncs and processes the DSL.</li>
       <li><b>Commit DSL changes.</b> Every commit to the YAML re-syncs the source and reloads the pipeline.</li>
       <li><b>Run it.</b> Trigger manually or via a <code>GitRepo</code> resource that fires steps when the repo changes.</li>
     </ol>
-    <p class="prose muted">Source: <a href="https://jfrog.com/help/r/jfrog-pipelines-documentation/pipeline-example-hello-world" target="_blank" rel="noopener">JFrog — Pipeline Example: Hello World</a>.</p>
+    <p class="prose muted">Source: <a href="https://jfrog.com/help/r/jfrog-pipelines-documentation/pipeline-example-hello-world" target="_blank" rel="noopener">JFrog - Pipeline Example: Hello World</a>.</p>
   </section>
 
   <section id="example" class="section">
@@ -124,11 +124,11 @@
         <span class="flow-conn">→</span>
         <div class="flow-step"><span class="flow-step-n">4</span><b>Sync &amp; run</b><small>GitRepo trigger fires steps</small></div>
       </div>
-      <figcaption>The official Hello World demonstrates a GitHub integration, a pipeline source, a <code>GitRepo</code> trigger, and <code>inputResources</code>/<code>inputSteps</code> dependencies. Fork the JFrog example repo, update the path values, commit, and watch it run. <a href="https://jfrog.com/help/r/jfrog-pipelines-documentation/pipeline-example-hello-world" target="_blank" rel="noopener">JFrog — Hello World</a>.</figcaption>
+      <figcaption>The official Hello World demonstrates a GitHub integration, a pipeline source, a <code>GitRepo</code> trigger, and <code>inputResources</code>/<code>inputSteps</code> dependencies. Fork the JFrog example repo, update the path values, commit, and watch it run. <a href="https://jfrog.com/help/r/jfrog-pipelines-documentation/pipeline-example-hello-world" target="_blank" rel="noopener">JFrog - Hello World</a>.</figcaption>
     </figure>
     <div class="callout callout-tip">
       <p class="callout-title">Where Artifactory &amp; Xray plug in</p>
-      <p>Add a <code>BuildInfo</code> resource to publish build-info to Artifactory, then a promotion step (see <a href="build-promotion.html">Build promotion</a>) gated by an Xray scan. That turns a plain CI pipeline into a secured, traceable delivery pipeline — the whole point of doing CI <em>inside</em> JFrog.</p>
+      <p>Add a <code>BuildInfo</code> resource to publish build-info to Artifactory, then a promotion step (see <a href="build-promotion.html">Build promotion</a>) gated by an Xray scan. That turns a plain CI pipeline into a secured, traceable delivery pipeline - the whole point of doing CI <em>inside</em> JFrog.</p>
     </div>
   </section>
 

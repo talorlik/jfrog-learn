@@ -1,5 +1,5 @@
 /* ============================================================
-   JFrog Learn — shared app script (multi-page)
+   JFrog Learn - shared app script (multi-page)
    - injects sidebar + brand + search trigger
    - theme toggle, mobile nav, tabs, in-page scrollspy
    - command-palette style search over search-index.json
@@ -280,11 +280,11 @@ function initSearch() {
 
   function render(items, terms = []) {
     if (!input.value.trim()) {
-      results.innerHTML = '<div class="search-empty">Type to search across every page — concepts, commands, and CLI.</div>';
+      results.innerHTML = '<div class="search-empty">Type to search across every page - concepts, commands, and CLI.</div>';
       return;
     }
     if (!items.length) {
-      results.innerHTML = `<div class="search-empty">No matches${SEARCH_DATA ? '' : ' — loading index…'}.</div>`;
+      results.innerHTML = `<div class="search-empty">No matches${SEARCH_DATA ? '' : ' - loading index…'}.</div>`;
       return;
     }
     const list = items.map((it, i) => {
@@ -393,9 +393,9 @@ async function initSearchPage() {
   if (!q0) setTimeout(() => input.focus(), 50);
 
   function runPage(q) {
-    document.title = (q ? '\u201c' + q + '\u201d \u2014 Search' : 'Search') + ' \u2014 JFrog Learn';
+    document.title = (q ? '\u201c' + q + '\u201d - Search' : 'Search') + ' - JFrog Learn';
     if (!q) {
-      meta.textContent = 'Type a question above \u2014 for example, \u201chow to create a token\u201d.';
+      meta.textContent = 'Type a question above - for example, \u201chow to create a token\u201d.';
       root.innerHTML = '<div class="search-empty-lg">Search across every page. Results land here, grouped by topic, with deep links to the exact section.</div>';
       relatedEl.innerHTML = '';
       return;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build search-index.json — a SECTION-LEVEL index over the whole site.
+"""Build search-index.json - a SECTION-LEVEL index over the whole site.
 
 The consolidated results page (search.html) and the command-palette overlay
 (assets/app.js) both read this file. It produces two kinds of entries:
@@ -16,7 +16,7 @@ Every entry has the fields the front-end expects:
   pageTitle  the owning page's <h1>
   title      section heading (or page title for page entries)
   body       plain-text body for snippets
-  howto      bool — is this a how-to / step / command section?
+  howto      bool - is this a how-to / step / command section?
   _title / _headings / _body   lowercase fields used by score()
 
 It also appends a single meta record (kind="meta") carrying the curated
@@ -133,7 +133,7 @@ def parse_page(path):
         html = f.read()
     p = SectionExtractor()
     p.feed(html)
-    h1 = clean(p.h1) or clean(p.title).split("\u2014")[0].strip()
+    h1 = clean(p.h1) or clean(p.title).split("-")[0].strip()
     preface = clean(" ".join(p.preface))
     secs = []
     for s in p.sections:
@@ -192,8 +192,8 @@ def main():
 
     # Home (page-level only)
     home = build_for_file("index.html", "index.html")
-    home[0]["title"] = "JFrog Learn \u2014 Home"
-    home[0]["pageTitle"] = "JFrog Learn \u2014 Home"
+    home[0]["title"] = "JFrog Learn - Home"
+    home[0]["pageTitle"] = "JFrog Learn - Home"
     home[0]["_title"] = home[0]["title"].lower()
     entries.extend(home[:1])  # home has no real <section id>, keep summary only
 

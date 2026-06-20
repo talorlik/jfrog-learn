@@ -10,7 +10,7 @@ SHELL = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>{title} — JFrog Learn</title>
+<title>{title} - JFrog Learn</title>
 <meta name="description" content="{desc}" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -108,10 +108,10 @@ SEARCH_BODY = """
 def render_search():
     onthis = ""  # results page has no in-page anchors
     return SHELL.format(
-        title="Search", desc="Search every JFrog Learn page — concepts, commands, and CLI — consolidated on one page with deep links and related topics.",
+        title="Search", desc="Search every JFrog Learn page - concepts, commands, and CLI - consolidated on one page with deep links and related topics.",
         onthispage=onthis,
         badges='<span class="lvl">All pages</span><span class="lvl">Consolidated</span>',
-        h1="Search results", lede="Everything matching your query, grouped by topic with deep links into the exact section — plus related material so you don\u2019t have to search again.",
+        h1="Search results", lede="Everything matching your query, grouped by topic with deep links into the exact section - plus related material so you don\u2019t have to search again.",
         body=SEARCH_BODY,
         prev_href="../index.html", prev_dir="Back to", prev_title="Home",
         next_href="fundamentals.html", next_dir="Start with", next_title="Fundamentals",

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Artifactory REST API — JFrog Learn</title>
+<title>Artifactory REST API - JFrog Learn</title>
 <meta name="description" content="Authentication, the most useful Artifactory REST endpoints, and how to drive them from curl and the JFrog CLI to automate repos, users, and more." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -42,17 +42,17 @@
 
   <section id="auth" class="section">
     <span class="kicker">Foundation</span>
-    <h2>Authentication — three ways in</h2>
+    <h2>Authentication - three ways in</h2>
     <div class="callout callout-q">
       <p class="callout-title">New to APIs? Start here</p>
-      <p>An <b>API</b> (Application Programming Interface) is a way for programs to talk to Artifactory instead of a human clicking the web UI. <b>REST</b> is the most common style of web API: you send an <b>HTTP request</b> (the same protocol your browser uses) to a URL called an <b>endpoint</b>, using a <b>method</b> that states your intent &mdash; <code>GET</code> (read), <code>POST</code> (create), <code>PUT</code> (create/replace), <code>DELETE</code> (remove). Artifactory replies with <b>JSON</b> (a simple text format for structured data). That's the whole idea: a URL + a method + (sometimes) a JSON body.</p>
+      <p>An <b>API</b> (Application Programming Interface) is a way for programs to talk to Artifactory instead of a human clicking the web UI. <b>REST</b> is the most common style of web API: you send an <b>HTTP request</b> (the same protocol your browser uses) to a URL called an <b>endpoint</b>, using a <b>method</b> that states your intent - <code>GET</code> (read), <code>POST</code> (create), <code>PUT</code> (create/replace), <code>DELETE</code> (remove). Artifactory replies with <b>JSON</b> (a simple text format for structured data). That's the whole idea: a URL + a method + (sometimes) a JSON body.</p>
     </div>
-    <p class="prose">Every Artifactory REST call needs to identify you (this is <b>authentication</b> &mdash; proving who you are). There are three accepted methods; pick access tokens for automation. <a href="https://jfrog.com/help/r/jfrog-platform-rest-apis/introduction-to-the-jfrog-platform-rest-apis" target="_blank" rel="noopener">JFrog — Intro to the REST APIs</a>.</p>
+    <p class="prose">Every Artifactory REST call needs to identify you (this is <b>authentication</b> - proving who you are). There are three accepted methods; pick access tokens for automation. <a href="https://jfrog.com/help/r/jfrog-platform-rest-apis/introduction-to-the-jfrog-platform-rest-apis" target="_blank" rel="noopener">JFrog - Intro to the REST APIs</a>.</p>
     <div class="table-wrap">
       <table class="datatable">
         <thead><tr><th>Method</th><th>How it's sent</th><th>Use when</th></tr></thead>
         <tbody>
-          <tr><td><b>Access token</b> (recommended)</td><td><code>Authorization: Bearer &lt;token&gt;</code> &mdash; an HTTP header you attach to the request; "Bearer" just means "whoever carries this token is allowed in"</td><td>Any automation — scoped, revocable, no password exposure.</td></tr>
+          <tr><td><b>Access token</b> (recommended)</td><td><code>Authorization: Bearer &lt;token&gt;</code> - an HTTP header you attach to the request; "Bearer" just means "whoever carries this token is allowed in"</td><td>Any automation - scoped, revocable, no password exposure.</td></tr>
           <tr><td>Basic auth</td><td><code>-u user:password</code></td><td>Quick local tests only; avoid in scripts.</td></tr>
           <tr><td>API key</td><td><code>X-JFrog-Art-Api: &lt;key&gt;</code></td><td>Legacy integrations (being phased out in favor of tokens).</td></tr>
         </tbody>
@@ -68,7 +68,7 @@
       <table class="datatable mono-table">
         <thead><tr><th>Endpoint</th><th>Method</th><th>Does</th></tr></thead>
         <tbody>
-          <tr><td><code>/artifactory/api/system/ping</code></td><td>GET</td><td>Health check — returns <code>OK</code>.</td></tr>
+          <tr><td><code>/artifactory/api/system/ping</code></td><td>GET</td><td>Health check - returns <code>OK</code>.</td></tr>
           <tr><td><code>/artifactory/api/repositories</code></td><td>GET</td><td>List all repositories.</td></tr>
           <tr><td><code>/artifactory/api/repositories/&lt;key&gt;</code></td><td>PUT</td><td>Create/configure a repository.</td></tr>
           <tr><td><code>/artifactory/api/repositories/&lt;key&gt;</code></td><td>GET</td><td>Read one repo's config.</td></tr>
@@ -105,7 +105,7 @@ curl -H "Authorization: Bearer $JF_TOKEN" \
   <section id="jfapi" class="section">
     <span class="kicker kicker-lab">Shortcut</span>
     <h2>The <code>jf api</code> shortcut</h2>
-    <p class="prose">If you've already configured a server with <code>jf c add</code> ("c" = config; this stores your server URL and token once), the CLI can call any Artifactory REST endpoint <em>using those stored credentials</em> — so you never type an auth header again. <a href="https://docs.jfrog.com/integrations/docs/use-api-endpoints-via-cli" target="_blank" rel="noopener">JFrog — Use API endpoints via CLI</a>.</p>
+    <p class="prose">If you've already configured a server with <code>jf c add</code> ("c" = config; this stores your server URL and token once), the CLI can call any Artifactory REST endpoint <em>using those stored credentials</em> - so you never type an auth header again. <a href="https://docs.jfrog.com/integrations/docs/use-api-endpoints-via-cli" target="_blank" rel="noopener">JFrog - Use API endpoints via CLI</a>.</p>
     <p class="code-label">Same "list repositories" call, authenticated automatically</p>
     <div class="codeblock"><code>jf rt curl -XGET /api/repositories
 <span class="cm"># or the generic platform call:</span>
@@ -133,7 +133,7 @@ curl -XPUT -H "Authorization: Bearer $JF_TOKEN" \
     <span class="kicker">Guidance</span>
     <h2>Best practices</h2>
     <ul class="feature-list">
-      <li><b>Use access tokens, never passwords</b> in automation — they're scoped and revocable.</li>
+      <li><b>Use access tokens, never passwords</b> in automation - they're scoped and revocable.</li>
       <li><b>Prefer <code>jf api</code> / <code>jf rt curl</code></b> in CLI contexts so credentials stay in CLI config, not your shell history.</li>
       <li><b>Check <code>/system/ping</code> first</b> in scripts to fail fast on connectivity/auth problems.</li>
       <li><b>Treat config-as-code.</b> Keep repo-creation JSON in version control so your platform is reproducible.</li>

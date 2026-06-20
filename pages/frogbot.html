@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Frogbot & IDE — JFrog Learn</title>
+<title>Frogbot & IDE - JFrog Learn</title>
 <meta name="description" content="Frogbot is a Git bot that scans pull requests with JFrog Xray and opens fix PRs automatically. Plus IDE plugins that flag vulnerabilities as you code." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -44,13 +44,13 @@
     <h2>What Frogbot is</h2>
     <div class="callout callout-q">
       <p class="callout-title">Two terms first: PR and "shift-left"</p>
-      <p>A <b>pull request (PR)</b> is how you propose changes on GitHub/GitLab &mdash; you push your branch and open a PR asking to merge it, so teammates (and bots) can review it before it lands. <b>"Shift-left"</b> means catching problems as early as possible in the development timeline (drawn left-to-right), because the earlier you catch a bug or vulnerability, the cheaper it is to fix.</p>
+      <p>A <b>pull request (PR)</b> is how you propose changes on GitHub/GitLab - you push your branch and open a PR asking to merge it, so teammates (and bots) can review it before it lands. <b>"Shift-left"</b> means catching problems as early as possible in the development timeline (drawn left-to-right), because the earlier you catch a bug or vulnerability, the cheaper it is to fix.</p>
     </div>
-    <p class="prose"><strong>Frogbot is a Git bot that scans your pull requests and repositories for security vulnerabilities using JFrog Xray</strong> (Xray is JFrog's security scanner). When a developer opens a PR, Frogbot scans it and posts the results as a comment (JFrog calls this a "decoration") directly on the PR — and if it finds no new issues, it says so. It works with GitHub, GitLab, Bitbucket, and Azure Repos. <a href="https://github.com/jfrog/frogbot" target="_blank" rel="noopener">jfrog/frogbot</a>.</p>
+    <p class="prose"><strong>Frogbot is a Git bot that scans your pull requests and repositories for security vulnerabilities using JFrog Xray</strong> (Xray is JFrog's security scanner). When a developer opens a PR, Frogbot scans it and posts the results as a comment (JFrog calls this a "decoration") directly on the PR - and if it finds no new issues, it says so. It works with GitHub, GitLab, Bitbucket, and Azure Repos. <a href="https://github.com/jfrog/frogbot" target="_blank" rel="noopener">jfrog/frogbot</a>.</p>
     <ul class="feature-list">
-      <li><b>Only flags <em>new</em> issues.</b> A PR scan compares the project state before and after the change, so it reports only vulnerabilities the PR introduces — not pre-existing noise.</li>
+      <li><b>Only flags <em>new</em> issues.</b> A PR scan compares the project state before and after the change, so it reports only vulnerabilities the PR introduces - not pre-existing noise.</li>
       <li><b>Opens fix PRs.</b> When fixable issues are found and auto-fix is enabled, Frogbot opens a pull request that upgrades the vulnerable dependency to a fixed version.</li>
-      <li><b>Requires Xray 3.29.0+.</b> Frogbot uses your JFrog platform's Xray to do the actual scanning. <a href="https://docs.jfrog.com/security/docs/how-to-commit-scan-and-pr-scan" target="_blank" rel="noopener">JFrog — Commit &amp; PR scan</a>.</li>
+      <li><b>Requires Xray 3.29.0+.</b> Frogbot uses your JFrog platform's Xray to do the actual scanning. <a href="https://docs.jfrog.com/security/docs/how-to-commit-scan-and-pr-scan" target="_blank" rel="noopener">JFrog - Commit &amp; PR scan</a>.</li>
     </ul>
   </section>
 
@@ -66,10 +66,10 @@
         </tbody>
       </table>
     </div>
-    <p class="prose muted">Source: <a href="https://docs.jfrog.com/security/docs/how-to-commit-scan-and-pr-scan" target="_blank" rel="noopener">JFrog — Scanning Commits and Pull Requests</a>.</p>
+    <p class="prose muted">Source: <a href="https://docs.jfrog.com/security/docs/how-to-commit-scan-and-pr-scan" target="_blank" rel="noopener">JFrog - Scanning Commits and Pull Requests</a>.</p>
     <div class="callout callout-tip">
       <p class="callout-title">Required environment variables</p>
-      <p>An "environment variable" is a named value the running job can read. Both modes need <code>JF_URL</code> (your platform URL, e.g. <code>https://my.jfrog.io</code>) and <code>JF_ACCESS_TOKEN</code> (a scoped access token &mdash; see the <a href="access-tokens.html">Access tokens</a> page), plus a Git token (<code>JF_GIT_TOKEN</code> / the CI's built-in token) so Frogbot has permission to comment and open PRs on your repo.</p>
+      <p>An "environment variable" is a named value the running job can read. Both modes need <code>JF_URL</code> (your platform URL, e.g. <code>https://my.jfrog.io</code>) and <code>JF_ACCESS_TOKEN</code> (a scoped access token - see the <a href="access-tokens.html">Access tokens</a> page), plus a Git token (<code>JF_GIT_TOKEN</code> / the CI's built-in token) so Frogbot has permission to comment and open PRs on your repo.</p>
     </div>
   </section>
 
@@ -78,17 +78,17 @@
     <h2>Setting up Frogbot on GitHub Actions</h2>
     <ol class="steps">
       <li><b>Allow Frogbot to open PRs.</b> In GitHub → <em>Settings → Actions → General</em>, check <b>"Allow GitHub Actions to create and approve pull requests."</b></li>
-      <li><b>(Recommended for OSS) Create a <code>frogbot</code> environment.</b> Settings → <em>Environments</em> → New environment named <code>frogbot</code>, and add reviewers. Those reviewers must approve before Frogbot scans a PR — a safety gate for public repos.</li>
+      <li><b>(Recommended for OSS) Create a <code>frogbot</code> environment.</b> Settings → <em>Environments</em> → New environment named <code>frogbot</code>, and add reviewers. Those reviewers must approve before Frogbot scans a PR - a safety gate for public repos.</li>
       <li><b>Add the workflow file.</b> Drop a Frogbot workflow into <code>.github/workflows/</code> (template below), or use the JFrog GitHub App to have it opened for you automatically across selected repos.</li>
       <li><b>Add secrets/vars.</b> Provide <code>JF_URL</code> and <code>JF_ACCESS_TOKEN</code> as repository secrets. The built-in <code>GITHUB_TOKEN</code> covers Git operations.</li>
     </ol>
-    <p class="prose muted">Sources: <a href="https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot/installation/github-actions/installation" target="_blank" rel="noopener">JFrog — Frogbot GitHub Actions install</a>, <a href="https://docs.jfrog.com/integrations/docs/github-actions-frogbot-bulk-installation" target="_blank" rel="noopener">JFrog GitHub App bulk install</a>.</p>
+    <p class="prose muted">Sources: <a href="https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot/installation/github-actions/installation" target="_blank" rel="noopener">JFrog - Frogbot GitHub Actions install</a>, <a href="https://docs.jfrog.com/integrations/docs/github-actions-frogbot-bulk-installation" target="_blank" rel="noopener">JFrog GitHub App bulk install</a>.</p>
   </section>
 
   <section id="yaml" class="section">
     <span class="kicker kicker-lab">YAML</span>
     <h2>The PR-scan workflow</h2>
-    <p class="prose">A minimal GitHub Actions workflow that runs Frogbot on every pull request. A "workflow" is a YAML file in <code>.github/workflows/</code> that GitHub runs automatically when a trigger fires. <b>YAML</b> is an indentation-based config format &mdash; indentation (spaces, never tabs) defines the nesting. <a href="https://jfrog.com/help/r/jfrog-and-github-integration-guide/github-pr-scans-and-advanced-security" target="_blank" rel="noopener">JFrog — GitHub PR scans</a>.</p>
+    <p class="prose">A minimal GitHub Actions workflow that runs Frogbot on every pull request. A "workflow" is a YAML file in <code>.github/workflows/</code> that GitHub runs automatically when a trigger fires. <b>YAML</b> is an indentation-based config format - indentation (spaces, never tabs) defines the nesting. <a href="https://jfrog.com/help/r/jfrog-and-github-integration-guide/github-pr-scans-and-advanced-security" target="_blank" rel="noopener">JFrog - GitHub PR scans</a>.</p>
     <div class="codeblock"><code>name: "Frogbot Scan Pull Request"   <span class="cm"># label shown in the Actions tab</span>
 on:                                  <span class="cm"># what triggers this workflow</span>
   pull_request_target:               <span class="cm"># run when a PR is opened/updated</span>
@@ -115,12 +115,12 @@ jobs:
 
   <section id="ide" class="section">
     <span class="kicker kicker-x">Shift-left</span>
-    <h2>IDE integration — catch it before the PR</h2>
-    <p class="prose">Even earlier than the PR is the editor. JFrog ships plugins for <strong>VS Code, IntelliJ/JetBrains IDEs, Visual Studio, and Eclipse</strong> that scan your project's dependencies against Xray and surface vulnerabilities inline as you work. <a href="https://docs.jfrog.com/security/docs/ide-integrations" target="_blank" rel="noopener">JFrog — IDE integrations</a>.</p>
+    <h2>IDE integration - catch it before the PR</h2>
+    <p class="prose">Even earlier than the PR is the editor. JFrog ships plugins for <strong>VS Code, IntelliJ/JetBrains IDEs, Visual Studio, and Eclipse</strong> that scan your project's dependencies against Xray and surface vulnerabilities inline as you work. <a href="https://docs.jfrog.com/security/docs/ide-integrations" target="_blank" rel="noopener">JFrog - IDE integrations</a>.</p>
     <div class="cards cards-x">
       <div class="card"><h3>🧩 Inline findings</h3><p>Vulnerable dependencies are highlighted in your dependency files with severity and details, without leaving the editor.</p></div>
       <div class="card"><h3>🔗 Connect to your JPD</h3><p>Point the plugin at your JFrog platform URL + an access token; it uses your Xray for the database and policies.</p></div>
-      <div class="card"><h3>⏪ Earliest feedback</h3><p>Fix issues before you even commit — the cheapest place to fix anything is in the editor.</p></div>
+      <div class="card"><h3>⏪ Earliest feedback</h3><p>Fix issues before you even commit - the cheapest place to fix anything is in the editor.</p></div>
     </div>
     <div class="callout callout-tip">
       <p class="callout-title">The shift-left ladder</p>
