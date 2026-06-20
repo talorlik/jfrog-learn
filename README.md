@@ -47,6 +47,24 @@ python3 build_search_index.py   # rebuild search-index.json
 
 Search runs entirely in the browser (a static JSON index fetched and ranked client-side), so it works on GitHub Pages with no backend.
 
+## Google Docs sync (for NotebookLM)
+
+Every content page is also mirrored into a Google Drive folder (`jfrog-learning`)
+as a native Google Doc - one Doc per topic plus an auto-rebuilt index Doc - so
+the material can be added as NotebookLM sources. This is fully automated: a
+GitHub Actions workflow runs on every push to `main` that touches `pages/**` or
+`automation/**`.
+
+The pipeline (in `automation/`) renders the site's CSS/HTML diagrams to PNGs
+with headless Chromium, builds a high-fidelity `.docx` per page with those images
+embedded, then uploads each `.docx` to Drive and lets Drive convert it to a
+native Google Doc. Each Doc is updated in place on every run, so its file ID
+(and therefore every NotebookLM source link) stays valid.
+
+Setup is a one-time OAuth step documented in
+[automation/SETUP.md](automation/SETUP.md). The design and trade-offs behind
+this pipeline are in [DECISIONS.md](DECISIONS.md).
+
 ## Run locally
 
 It's a static site - serve the folder so `fetch()` of the search index works:
@@ -64,11 +82,18 @@ python3 -m http.server 8000
 
 All facts link to primary JFrog documentation. Product names belong to JFrog Ltd.
 
-## Style rules
+## For contributors and agents
 
-- **No em-dashes or en-dashes anywhere** - in the website, the generated Google
-  Docs, or file names. Use plain hyphens (minus) instead. This is a hard rule;
-  full details and the enforcement converter are in [AGENTS.md](AGENTS.md).
+If you (human or AI) are going to edit this repo, start with these two files:
+
+- [AGENTS.md](AGENTS.md) - orientation and rules: project shape, the website
+  build, the Google Docs pipeline, document styling, CI, and git conventions.
+- [DECISIONS.md](DECISIONS.md) - the key design decisions and why they were made.
+
+The one rule worth repeating here: **no em-dashes or en-dashes anywhere** - not
+in the website, the generated Google Docs, or file names. Use plain hyphens
+(minus) instead. This is a hard rule; full details and the enforcement converter
+are in [AGENTS.md](AGENTS.md).
 
 ## License
 
