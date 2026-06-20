@@ -186,17 +186,95 @@ def find_or_create_folder(drive, name: str) -> str:
     return folder["id"]
 
 
-def find_doc(drive, folder_id: str, name: str):
+def _legacy_name_variants(name: str) -> list[str]:
+    """Older Docs were named with an em-dash before the no-dash rule.
+
+    Given the current (hyphenated) name, return the historical em-dash /
+    en-dash spellings so we can find and rename the original Doc in place
+    instead of creating a duplicate. Order matters: try em-dash first.
+    """
+    variants = []
+    for dash in ("\u2014", "\u2013"):
+        v = name.replace(" - ", f" {dash} ").replace("-", dash)
+        # Only the prefix separator and title dashes ever used em-dashes;
+        # the broad replace above is a superset, so de-dup against name.
+        if v != name:
+            variants.append(v)
+    # A more targeted variant: only the "JFrog Learn - " separator.
+    sep = name.replace("JFrog Learn - ", "JFrog Learn \u2014 ", 1)
+    if sep != name and sep not in variants:
+        variants.insert(0, sep)
+    return variants
+
+
+def _list_docs_by_name(drive, folder_id: str, name: str) -> list[dict]:
     q = (
         f"name = '{_q_escape(name)}' and mimeType = '{GOOGLE_DOC_MIME}' "
         f"and '{folder_id}' in parents and trashed = false"
     )
     res = drive.files().list(
-        q=q, fields="files(id,name,modifiedTime)", spaces="drive",
+        q=q, fields="files(id,name,createdTime,modifiedTime)", spaces="drive",
         supportsAllDrives=True, includeItemsFromAllDrives=True,
+        orderBy="createdTime",
     ).execute()
-    files = res.get("files", [])
-    return files[0] if files else None
+    return res.get("files", [])
+
+
+def find_doc(drive, folder_id: str, name: str):
+    """Find the Doc to update for `name`.
+
+    Prefer an exact (hyphenated) match. If none exists, fall back to the
+    legacy em-dash spelling so the original Doc is updated and renamed in
+    place - preserving its file id (and any NotebookLM links to it).
+    When duplicates exist for the exact name, keep the oldest.
+    """
+    files = _list_docs_by_name(drive, folder_id, name)
+    if files:
+        return files[0]  # oldest (orderBy createdTime)
+    for legacy in _legacy_name_variants(name):
+        legacy_files = _list_docs_by_name(drive, folder_id, legacy)
+        if legacy_files:
+            return legacy_files[0]
+    return None
+
+
+def reconcile_legacy_name(drive, folder_id: str, name: str) -> str | None:
+    """One-time self-healing for the em-dash -> hyphen rename.
+
+    The first sync after the no-dash rule searched for the new hyphenated
+    name, didn't find the old em-dash Doc, and created a hyphenated
+    DUPLICATE - orphaning the original (which holds the NotebookLM links).
+
+    For a given target `name`, if BOTH a legacy em-dash Doc and newer
+    hyphenated duplicate(s) exist, keep the ORIGINAL (oldest, em-dash):
+    rename it to `name` and trash the newer duplicates. Returns the id of
+    the canonical Doc to keep, or None if there's nothing to reconcile.
+    """
+    legacy = None
+    for variant in _legacy_name_variants(name):
+        found = _list_docs_by_name(drive, folder_id, variant)
+        if found:
+            legacy = found[0]  # oldest legacy Doc = the real original
+            break
+    if not legacy:
+        return None
+
+    canonical_id = legacy["id"]
+    # Trash any hyphenated duplicates created by the broken run.
+    for dup in _list_docs_by_name(drive, folder_id, name):
+        if dup["id"] != canonical_id:
+            drive.files().update(
+                fileId=dup["id"], supportsAllDrives=True,
+                body={"trashed": True},
+            ).execute()
+            print(f"  trashed duplicate: {name} -> {dup['id']}")
+    # Rename the original to the hyphenated name (content gets refreshed by
+    # the normal upsert immediately after).
+    drive.files().update(
+        fileId=canonical_id, supportsAllDrives=True, body={"name": name},
+    ).execute()
+    print(f"  reclaimed original: {legacy['name']!r} -> {name!r} ({canonical_id})")
+    return canonical_id
 
 
 def upsert_doc_from_docx(drive, folder_id: str, name: str, docx_path: Path) -> tuple[str, str]:
@@ -353,6 +431,9 @@ def main():
     for slug in slugs:
         info = built[slug]
         name = doc_name_for(info["title"])
+        # Self-heal the one-time em-dash -> hyphen rename: reclaim the
+        # original Doc id and trash any hyphenated duplicate before upsert.
+        reconcile_legacy_name(drive, folder_id, name)
         fid, action = upsert_doc_from_docx(drive, folder_id, name, info["docx_path"])
         print(f"  {action}: {name} -> {fid}")
         entries.append({
@@ -364,6 +445,7 @@ def main():
     # Rebuild the index doc last (so it has all fresh file ids)
     idx_path = DOCX_DIR / "_index.docx"
     build_index_docx(entries, idx_path)
+    reconcile_legacy_name(drive, folder_id, INDEX_DOC_NAME)
     idx_id, idx_action = upsert_doc_from_docx(drive, folder_id, INDEX_DOC_NAME, idx_path)
     print(f"  {idx_action}: {INDEX_DOC_NAME} -> {idx_id}")
 
