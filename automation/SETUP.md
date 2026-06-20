@@ -1,17 +1,39 @@
 # Setup: JFrog Learn → Google Drive sync (OAuth)
 
 This automation converts every JFrog Learn content page (HTML) into a native
-**Google Doc** — preserving headings, lists, tables, code blocks, and diagrams
-(as Mermaid) — and mirrors them into a Google Drive folder named
-**`jfrog-learning`**. It runs automatically on every push to `main`, so the Docs
-stay in sync with the site. You then add those Docs as **NotebookLM** sources to
-get native chat over the content.
+**Google Doc** — preserving headings, lists, tables, code blocks, callouts, and
+**diagrams as real embedded images** — and mirrors them into a Google Drive folder
+named **`jfrog-learning`**. It runs automatically on every push to `main`, so the
+Docs stay in sync with the site. You then add those Docs as **NotebookLM** sources
+to get native chat over the content.
 
 - **One Doc per page** + an auto-rebuilt **index Doc** that links to every page.
 - **Idempotent:** each run updates the existing Doc in place (same file ID), so
   NotebookLM source links keep working. New pages create new Docs automatically.
-- **Diagrams:** the site's CSS/HTML diagrams are converted to Mermaid fenced
-  blocks inside the Docs.
+- **Diagrams render properly now:** the site draws its diagrams with CSS/HTML (no
+  image files), so the pipeline renders each `<figure>` with headless Chromium
+  and embeds the resulting PNG into the Doc — they look exactly like the website.
+
+## How the pipeline works (the DOCX path)
+
+The sync no longer uploads Markdown (Drive's Markdown importer mangled tables and
+code, and Mermaid code fences never rendered). Instead, for each page it:
+
+1. **Renders diagrams** — `render_diagrams.py` loads the page with the site's
+   `assets/style.css` in headless Chromium (Playwright) and screenshots each
+   `<figure>` to a high-DPI PNG.
+2. **Builds a `.docx`** — `build_docx.py` converts the page HTML into a Word
+   document with native headings, lists, tables, shaded monospace code blocks,
+   callouts, and the **diagram PNGs embedded inside the file**.
+3. **Uploads + converts** — `sync_to_drive.py` uploads the `.docx` to Drive with
+   the Google Doc mimeType, so Drive converts it to a native Google Doc. Drive's
+   **DOCX importer is its highest-fidelity converter**, so structure and embedded
+   images survive well.
+
+Because the images are embedded in the `.docx` **before** upload, there are no
+separate image uploads and **no extra OAuth scope** — the existing `drive.file`
+scope is all that's needed. **If you already set this up before, your existing
+token keeps working; you do NOT need to re-consent or change the secret.**
 
 ## Why OAuth (and not a service account)
 
@@ -96,7 +118,8 @@ click **Get started**, then:
    **Continue** → **Create**.
 
 > You don't configure scopes here — the script requests the `drive.file` scope at
-> run time. (Scopes live under **Data access** if you ever need them.)
+> run time. (Scopes live under **Data access** if you ever need them.) The Docs
+> API / `documents` scope is **not** used by this pipeline.
 >
 > **Authorised domains:** leave this **empty**. You only need it if you fill in a
 > home page / privacy / ToS URL or use a Web-application client — neither applies
@@ -233,7 +256,13 @@ the `GOOGLE_OAUTH_CREDENTIALS` secret.
 cd automation
 source .venv/bin/activate          # the venv created in Step 4
 
-# Dry run — writes Markdown previews to automation/_md_preview/, no Drive writes:
+# One-time: install Chromium for the diagram rendering step
+pip install -r requirements.txt
+python -m playwright install chromium
+
+# Dry run — renders diagram PNGs to automation/_diagrams/ and builds the .docx
+# files in automation/_docx/, but performs NO Drive writes. Open the .docx files
+# to preview exactly what will become each Google Doc.
 python sync_to_drive.py --dry-run
 
 # Real run against Drive, as you (paste your token JSON into the env var):
@@ -241,6 +270,11 @@ export GOOGLE_OAUTH_CREDENTIALS='{"client_id":"...","client_secret":"...","refre
 # (No DRIVE_FOLDER_ID needed — the app creates/reuses its own jfrog-learning folder.)
 python sync_to_drive.py
 ```
+
+> On most Linux/macOS dev machines `playwright install chromium` just works. If
+> your OS isn't one Playwright officially supports, point it at any local Chrome
+> via `export PLAYWRIGHT_CHROMIUM_PATH=/path/to/chrome` before running.
+> CI uses `ubuntu-latest`, where the bundled Chromium installs cleanly.
 
 ## Troubleshooting
 
@@ -262,14 +296,31 @@ python sync_to_drive.py
   consent screen (because you already approved), first revoke access at
   [myaccount.google.com/permissions](https://myaccount.google.com/permissions)
   then run it again so it issues a fresh refresh token.
+- **Diagrams missing / a page shows `[Diagram] ...` text instead of an image** —
+  the rendering step didn't produce a PNG for that figure. Check the
+  `playwright install chromium` step ran, and that the figure exists in the page
+  HTML. The build degrades gracefully to the caption text so nothing is lost.
+- **Diagrams look dark in the Doc** — that's intended: they are faithful images
+  of the site's dark-themed diagrams. They're embedded as real pictures, so they
+  render in Google Docs and in NotebookLM previews.
 
 ## Files
 
-- `automation/html_to_markdown.py` — HTML → Markdown converter.
-- `automation/sync_to_drive.py` — converts pages and upserts Google Docs;
-  rebuilds the index Doc. Prefers OAuth; falls back to a service account.
+- `automation/render_diagrams.py` — renders each page's CSS/HTML `<figure>`
+  diagrams to high-DPI PNGs with headless Chromium (Playwright) + the site CSS.
+- `automation/build_docx.py` — converts a page's HTML into a structured `.docx`
+  (native headings, lists, tables, shaded code, callouts) with the diagram PNGs
+  **embedded** in the file.
+- `automation/sync_to_drive.py` — orchestrates render → build → upload; uploads
+  each `.docx` and lets Drive convert it to a Google Doc; rebuilds the index Doc.
+  Prefers OAuth; falls back to a service account.
 - `automation/get_oauth_token.py` — one-time helper to mint the OAuth refresh
   token.
-- `automation/requirements.txt` — Python dependencies for the sync (CI). The
-  token helper additionally needs `google-auth-oauthlib` (installed locally only).
-- `.github/workflows/sync-to-drive.yml` — runs the sync on push to `main`.
+- `automation/html_to_markdown.py` — legacy HTML → Markdown converter (no longer
+  used by the sync; kept as a standalone utility).
+- `automation/requirements.txt` — Python dependencies for the sync (CI), including
+  `python-docx` and `playwright`. CI also runs `playwright install --with-deps
+  chromium`. The token helper additionally needs `google-auth-oauthlib`
+  (installed locally only).
+- `.github/workflows/sync-to-drive.yml` — runs the sync on push to `main`
+  (installs Chromium for the diagram rendering step).

@@ -7,11 +7,17 @@ name: Sync to Google Drive
 # Runs on every push to main that touches a page, the converter, or this
 # workflow. Can also be run manually from the Actions tab.
 #
+# Pipeline: render each page's CSS/HTML diagrams to PNG with headless Chromium
+# (Playwright), build a .docx per page with those images embedded + native Word
+# structure, then upload each .docx to Drive and let Drive convert it to a native
+# Google Doc. This produces high-fidelity Docs whose diagrams actually render.
+#
 # Requires a repository secret GOOGLE_OAUTH_CREDENTIALS (OAuth user credentials
 # JSON: client_id, client_secret, refresh_token) so the sync acts as you and
 # uses your own Drive quota. The app uses the non-sensitive drive.file scope and
 # manages its OWN 'jfrog-learning' folder, so DRIVE_FOLDER_ID is optional and is
-# normally left unset. See automation/SETUP.md for the one-time setup.
+# normally left unset. No 'documents' scope is needed (images are embedded in the
+# .docx before upload). See automation/SETUP.md for the one-time setup.
 
 on:
   push:
@@ -43,6 +49,9 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r automation/requirements.txt
+
+      - name: Install Chromium for Playwright (diagram rendering)
+        run: python -m playwright install --with-deps chromium
 
       - name: Sync pages to Google Drive
         working-directory: automation
