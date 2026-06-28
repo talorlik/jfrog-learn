@@ -39,4 +39,6 @@ token*.json
 # IDEs
 .vscode/
 .cursor/
-.claude/
+
+# Claude Code: track shared skills; keep machine-local settings private
+.claude/settings.local.json
