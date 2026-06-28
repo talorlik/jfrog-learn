@@ -60,3 +60,42 @@ jobs:
           DRIVE_FOLDER_ID: ${{ vars.DRIVE_FOLDER_ID }}
           SITE_BASE_URL: https://talorlik.github.io/jfrog-learn
         run: python sync_to_drive.py
+
+      # On failure (most often an expired Google OAuth refresh token), open or
+      # reuse a single tracking issue with the exact fix, so a broken sync is
+      # loud and actionable instead of silently leaving the Docs stale. Idempotent:
+      # if an open issue with the marker label already exists, comment instead of
+      # opening a duplicate.
+      - name: Open/refresh token-failure issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          LABEL="drive-sync-broken"
+          TITLE="Drive sync failed - refresh the Google OAuth token"
+          gh label create "$LABEL" --color B60205 \
+            --description "Automated: Drive/NotebookLM sync is failing" 2>/dev/null || true
+          # Build the body with printf (no heredoc - avoids YAML indentation
+          # pitfalls). %s keeps the run URL safe regardless of its contents.
+          printf '%s\n' \
+            'The "Sync to Google Drive" workflow failed. The most common cause is an expired Google OAuth refresh token.' \
+            '' \
+            '**Fix (about 2 minutes):**' \
+            '1. `cd automation && ./refresh_token.sh` - opens a browser once for consent, updates the `GOOGLE_OAUTH_CREDENTIALS` secret, and re-runs the sync.' \
+            '2. If this keeps happening weekly, publish the OAuth consent screen from "Testing" to "In production" in Google Cloud Console. `drive.file` is non-sensitive, so no verification is required. See `automation/SETUP.md`.' \
+            '' \
+            "Failed run: ${RUN_URL}" \
+            '' \
+            'Close this issue by hand once a sync run is green again.' \
+            > /tmp/issue_body.md
+          EXISTING=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+            --label "$LABEL" --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --repo "$GITHUB_REPOSITORY" \
+              --body "Sync failed again: ${RUN_URL}"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" \
+              --title "$TITLE" --label "$LABEL" --body-file /tmp/issue_body.md
+          fi

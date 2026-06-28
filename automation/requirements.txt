@@ -2,5 +2,9 @@ beautifulsoup4>=4.12
 lxml>=5.0
 google-api-python-client>=2.120
 google-auth>=2.29
+# Local-only: needed by get_oauth_token.py / refresh_token.sh to mint the OAuth
+# refresh token interactively. The CI sync uses the already-minted token and
+# does not import this, but it is harmless to install in CI.
+google-auth-oauthlib>=1.2
 python-docx>=1.1
 playwright>=1.44
