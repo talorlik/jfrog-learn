@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Xray Policies & Watches - JFrog Learn</title>
+<meta name="description" content="Write Xray security, license, and operational-risk rules; pick enforcement actions with grace periods; create a watch and attach the policy. The hands-on layer above the Fundamentals overview." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/style.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2340b14e'/%3E%3Cpath d='M9 21V11l7 4 7-4v10' fill='none' stroke='%230f1410' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E" />
+<script>window.__BASE='../';</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<aside class="sidebar" id="sidebar"></aside>
+
+<div id="onThisPage" hidden>
+  <p class="nav-group">On this page</p>
+  <a href="#recap" class="nav-link">30-second recap</a>
+  <a href="#model" class="nav-link">The enforcement model</a>
+  <a href="#types" class="nav-link">The 3 policy types</a>
+  <a href="#security-rules" class="nav-link">Writing security rules</a>
+  <a href="#license-rules" class="nav-link">Writing license rules</a>
+  <a href="#oprisk-rules" class="nav-link">Operational-risk rules</a>
+  <a href="#actions" class="nav-link">Enforcement actions</a>
+  <a href="#watches" class="nav-link">Watches: the scope</a>
+  <a href="#lab-policy" class="nav-link">Lab A: build a policy</a>
+  <a href="#lab-watch" class="nav-link">Lab B: build a watch</a>
+  <a href="#connect" class="nav-link">How this connects</a>
+  <a href="#recap-box" class="nav-link">Recap</a>
+  <a href="#sources" class="nav-link">Sources</a>
+</div>
+
+<button class="menu-btn" id="menuBtn" aria-label="Open navigation"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+<div class="scrim" id="scrim"></div>
+
+<main id="main">
+  <button class="theme-toggle" data-theme-toggle aria-label="Switch theme"></button>
+
+  <header class="page-head">
+    <nav class="breadcrumb"><a href="../index.html">Home</a><span class="sep">/</span><span>Xray Policies & Watches</span></nav>
+    <div class="page-badges"><span class="lvl lvl-xray">Xray</span><span class="lvl">Security</span><span class="lvl lvl-lab">Hands-on</span></div>
+    <h1>Xray Policies &amp; Watches</h1>
+    <p class="lede">Finding a vulnerability is only half the job - the other half is acting on it automatically. This page is the hands-on layer: how to write the rules inside a Policy, choose what happens when a rule is broken, then create a Watch and point it at your repositories. If the words Policy and Watch are new, read the short Policies &amp; Watches primer on Fundamentals first; here we go deeper and actually build them.</p>
+  </header>
+
+
+  <section id="recap" class="section">
+    <span class="kicker kicker-x">Recap</span>
+    <h2>30-second recap (the two objects)</h2>
+    <p class="prose">Xray's enforcement rests on two linked objects. The <a href="fundamentals.html#policies">Fundamentals page</a> explains the concept in full; here is the one-line version so this page stands on its own. A <strong>Policy</strong> is the <em>law</em>: a set of rules that say what counts as a problem and what to do about it. A <strong>Watch</strong> is the <em>jurisdiction and the police</em>: it says <em>where</em> the law applies and switches enforcement on. A finding only becomes a <strong>violation</strong> when a Watch points a Policy at the place the finding lives. <a href="https://jfrog.com/help/r/jfrog-security-documentation/creating-xray-policies-and-rules" target="_blank" rel="noopener">JFrog - Policy and Governance</a>.</p>
+    <div class="callout callout-q">
+      <p class="callout-title">One term before we start: violation</p>
+      <p>A <b>violation</b> is the record Xray creates when an artifact actually breaks a rule that a Watch has switched on. No Watch, no violation - even if the vulnerability is real and indexed. That is the single most common point of confusion, so keep it in mind as you read.</p>
+    </div>
+  </section>
+
+  <section id="model" class="section">
+    <span class="kicker kicker-x">Mental model</span>
+    <h2>The enforcement model, end to end</h2>
+    <p class="prose">Every piece below has exactly one job. Read the chain left to right: Xray indexes an artifact, a Watch decides it is in scope, the Watch's Policy checks its rules, and if a rule's conditions are met a violation is created and its actions fire.</p>
+    <figure class="flow" aria-label="Xray enforcement pipeline from indexed artifact to action">
+      <div class="flow-row">
+        <div class="flow-step flow-x"><span class="flow-step-n">1</span><b>Indexed artifact</b><small>component graph, scanned</small></div>
+        <span class="flow-conn">&rarr;</span>
+        <div class="flow-step flow-x"><span class="flow-step-n">2</span><b>Watch</b><small>is it in scope?</small></div>
+        <span class="flow-conn">&rarr;</span>
+        <div class="flow-step flow-x"><span class="flow-step-n">3</span><b>Policy + rules</b><small>conditions met?</small></div>
+      </div>
+      <div class="flow-row flow-row-down"><span class="flow-down">if a rule matches</span></div>
+      <div class="flow-row">
+        <div class="flow-step"><span class="flow-step-n">4</span><b>Violation</b><small>the record</small></div>
+        <span class="flow-conn">&rarr;</span>
+        <div class="flow-step flow-lab"><span class="flow-step-n">5</span><b>Actions</b><small>notify / fail / block</small></div>
+      </div>
+      <figcaption>The Policy holds the rules; the Watch supplies the scope. You build them in either order, but nothing is enforced until a Watch ties a Policy to a resource. <a href="https://docs.jfrog.com/security/docs/watches-in-jfrog-xray" target="_blank" rel="noopener">JFrog - Watches in Xray</a>.</figcaption>
+    </figure>
+  </section>
+
+  <section id="types" class="section">
+    <span class="kicker kicker-x">Policy types</span>
+    <h2>The three policy types</h2>
+    <p class="prose">When you create a Policy you pick exactly one type. The type decides which rule conditions you can configure. You cannot mix a license rule into a security policy - you would create one policy of each type and attach both to the same Watch.</p>
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Type</th><th>What it catches</th><th>Typical rule</th></tr></thead>
+        <tbody>
+          <tr><td><b>Security</b></td><td>Known vulnerabilities (CVEs) and malicious packages in your components.</td><td>Block anything with a High or Critical CVE that has a fix available.</td></tr>
+          <tr><td><b>License Compliance</b></td><td>Open-source licenses your organization bans or must track.</td><td>Fail the build if a component uses GPL-3.0.</td></tr>
+          <tr><td><b>Operational Risk</b></td><td>Components that are outdated, deprecated, end-of-life, or poorly maintained.</td><td>Alert if a dependency has not been updated in 12+ months.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose muted">Source: <a href="https://docs.jfrog.com/security/docs/create-policies" target="_blank" rel="noopener">JFrog - Create Policies</a>.</p>
+  </section>
+
+  <section id="security-rules" class="section">
+    <span class="kicker kicker-x">Writing rules</span>
+    <h2>Writing a security rule</h2>
+    <p class="prose">A <strong>rule</strong> is a condition plus the actions to take when it matches. A security policy gives you two ways to define the condition - by how severe the vulnerability is, or by its exact CVSS score. <b>CVSS</b> (Common Vulnerability Scoring System) is the industry-standard 0-10 number that rates how dangerous a flaw is; higher is worse.</p>
+    <div class="split">
+      <div class="split-item" data-accent="xray">
+        <h3 class="subhead">By minimal severity</h3>
+        <p>Pick the lowest severity that should trip the rule. Everything at that level or higher matches.</p>
+        <p class="sev-row">
+          <span class="sev sev-crit">Critical</span>
+          <span class="sev sev-high">High</span>
+          <span class="sev sev-med">Medium</span>
+          <span class="sev sev-low">Low</span>
+          <span class="sev sev-unknown">All</span>
+        </p>
+        <p class="muted">Example: minimal severity = High catches both High and Critical, ignores Medium and below.</p>
+      </div>
+      <div class="split-item" data-accent="xray">
+        <h3 class="subhead">By CVSS range</h3>
+        <p>Set a numeric band, for example CVSS 7.0 to 10.0, when you want finer control than the named buckets give you.</p>
+        <p class="muted">Useful when your org's risk threshold sits between two severity labels.</p>
+      </div>
+    </div>
+    <p class="prose">Two extra conditions sharpen a security rule so you alert on what is actually actionable:</p>
+    <ul class="feature-list">
+      <li><b>Fix version available.</b> Only flag vulnerabilities that have a released fix, so developers always have somewhere to go. This dramatically cuts noise.</li>
+      <li><b>Malicious package.</b> Trip on packages JFrog's security research has flagged as deliberately malicious (for example, typosquats), regardless of CVSS.</li>
+    </ul>
+    <div class="callout callout-tip">
+      <p class="callout-title">A good first security rule</p>
+      <p>Minimal severity = <b>High</b>, with <b>fix version available</b> turned on, action = <b>create a violation</b> plus <b>notify</b>. It is loud enough to matter, quiet enough to act on, and blocks nothing until you trust it. Tighten to <b>block download</b> later.</p>
+    </div>
+    <p class="prose muted">Source: <a href="https://docs.jfrog.com/security/docs/create-policies" target="_blank" rel="noopener">JFrog - Create Policies (Security Policy Rules)</a>.</p>
+  </section>
+
+  <section id="license-rules" class="section">
+    <span class="kicker kicker-x">Writing rules</span>
+    <h2>Writing a license rule</h2>
+    <p class="prose">A license policy enforces which open-source licenses are allowed in your software. You define the condition as one of two lists.</p>
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Approach</th><th>How it works</th><th>When to use it</th></tr></thead>
+        <tbody>
+          <tr><td><b>Banned licenses</b></td><td>List the licenses you forbid (e.g. GPL-3.0, AGPL-3.0). A component carrying any of them trips the rule.</td><td>You only need to block a handful of known-problematic licenses.</td></tr>
+          <tr><td><b>Allowed licenses</b></td><td>List the only licenses you permit (e.g. MIT, Apache-2.0, BSD-3-Clause). Anything outside the list trips the rule.</td><td>Strict shops that want an explicit allow-list - safer by default.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-q">
+      <p class="callout-title">Why a single component can carry several licenses</p>
+      <p>Open-source packages are sometimes dual-licensed or bundle code under more than one license. Xray evaluates every license it detects on a component, so a rule can trip on one license even when others are fine. Build your list with that in mind.</p>
+    </div>
+    <p class="prose muted">Source: <a href="https://jfrog.com/help/r/jfrog-security-documentation/creating-xray-policies-and-rules" target="_blank" rel="noopener">JFrog - Policy and Governance (license rules)</a>.</p>
+  </section>
+
+  <section id="oprisk-rules" class="section">
+    <span class="kicker kicker-x">Writing rules</span>
+    <h2>Operational-risk rules</h2>
+    <p class="prose">Operational risk is about <em>maintainability</em>, not security - components that are stale or abandoned are a liability even when no CVE exists yet. JFrog's documented examples make the intent concrete:</p>
+    <ul class="feature-list">
+      <li><b>Staleness.</b> Alert developers if a dependency has not been updated in 12+ months.</li>
+      <li><b>End-of-life.</b> Fail builds if a package is flagged as end-of-life.</li>
+      <li><b>Deprecation.</b> Block downloads of deprecated components.</li>
+    </ul>
+    <p class="prose muted">Source: <a href="https://docs.jfrog.com/security/docs/create-policies" target="_blank" rel="noopener">JFrog - Create Policies (Operational Risk Rule)</a>.</p>
+  </section>
+
+  <section id="actions" class="section">
+    <span class="kicker kicker-x">Enforcement</span>
+    <h2>What a rule can do: enforcement actions</h2>
+    <p class="prose">Each rule, when matched, always records a <strong>violation</strong>. On top of that you choose any number of automatic actions. They fall into two families: <em>notify</em> (tell someone) and <em>block</em> (stop the artifact from moving).</p>
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Action</th><th>Family</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td>Generate a violation</td><td>Always on</td><td>The record that something broke a rule. Everything else is optional on top.</td></tr>
+          <tr><td>Notify watch recipients / developer / email list</td><td>Notify</td><td>Email the watch owner, the resource's developer, or a configured address list.</td></tr>
+          <tr><td>Trigger a webhook</td><td>Notify</td><td>Call an external endpoint (Slack, a pipeline, your own service) when the rule is violated.</td></tr>
+          <tr><td>Create a Jira ticket</td><td>Notify</td><td>Open a tracking ticket automatically for each violation.</td></tr>
+          <tr><td>Fail builds</td><td>Block</td><td>Make a CI build fail when the rule is violated. Supports a grace period.</td></tr>
+          <tr><td>Block downloads</td><td>Block</td><td>Stop the artifact from being downloaded from Artifactory. Supports a grace period.</td></tr>
+          <tr><td>Block Release Bundle promotion / distribution</td><td>Block</td><td>Stop a Release Bundle from being promoted or distributed in the release lifecycle. Supports a grace period.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-tip">
+      <p class="callout-title">Grace periods: how to roll out blocking without an outage</p>
+      <p>The three blocking actions let you set a <b>grace period</b> - a window where the violation is recorded and teams are warned, but the block does not yet bite. This is the safe way to introduce enforcement: start in notify-only, switch on blocking with a grace period, then let the grace period expire once teams have caught up. <a href="https://docs.jfrog.com/security/docs/create-policies" target="_blank" rel="noopener">JFrog - Create Policies (enforcement actions)</a>.</p>
+    </div>
+  </section>
+
+  <section id="watches" class="section">
+    <span class="kicker kicker-x">Scope</span>
+    <h2>Watches: choosing the scope</h2>
+    <p class="prose">A Watch answers one question: <em>which resources do these policies apply to?</em> When you add resources to a Watch you choose from four kinds of target. A Watch must have at least one policy attached, or it enforces nothing.</p>
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Resource</th><th>What it scopes</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><b>Repositories</b></td><td>Everything stored in one or more repos.</td><td>Watch <code>docker-prod-local</code> for Critical CVEs.</td></tr>
+          <tr><td><b>Builds</b></td><td>The artifacts and dependencies captured in named builds.</td><td>Watch the <code>payments-api</code> build to gate CI.</td></tr>
+          <tr><td><b>Release Bundles</b></td><td>The signed, immutable bundles you promote and distribute.</td><td>Block distribution of a bundle with a vulnerable base layer.</td></tr>
+          <tr><td><b>Projects</b></td><td>All resources grouped under a JFrog Project.</td><td>Apply one compliance baseline across a whole team's project.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-tip">
+      <p class="callout-title">Best practice: one Watch per environment</p>
+      <p>JFrog recommends separate Watches for different environments - a permissive, notify-only Watch on dev repos and a strict, blocking Watch on production repos - so the same finding is handled appropriately for where it lives. <a href="https://docs.jfrog.com/security/docs/create-watches" target="_blank" rel="noopener">JFrog - Create Watches (best practices)</a>.</p>
+    </div>
+  </section>
+
+  <section id="lab-policy" class="section">
+    <span class="kicker kicker-lab">Lab A</span>
+    <h2>Lab A: create a security policy</h2>
+    <div class="panel-intro">
+      <p>Goal: a policy that records and notifies on High/Critical vulnerabilities that have a fix, blocking nothing yet. This is the exact click-path from the JFrog docs.</p>
+    </div>
+    <ol class="lab-steps">
+      <li><span class="ls-n">1</span><div><b>Open Watches &amp; Policies.</b> In the JFrog Platform, go to <b>Xray &rarr; Watches &amp; Policies</b>.</div></li>
+      <li><span class="ls-n">2</span><div><b>New Policy.</b> Click <b>New Policy</b> and enter a name, for example <code>prod-security-baseline</code>. Add a short description of its purpose.</div></li>
+      <li><span class="ls-n">3</span><div><b>Pick the type.</b> Choose <b>Security Policy</b>.</div></li>
+      <li><span class="ls-n">4</span><div><b>Add a rule.</b> Click <b>Add Rule</b>. Set the rule category to <b>By Minimal Severity = High</b>, and enable <b>Fix version available</b> so you only flag actionable findings.</div></li>
+      <li><span class="ls-n">5</span><div><b>Set actions.</b> Leave the default violation on, and add <b>Notify the watch recipient</b>. Do not enable blocking yet - you will tighten later.</div></li>
+      <li><span class="ls-n">6</span><div><b>Save.</b> Save the policy. It now exists but enforces nothing until a Watch uses it - that is Lab B.</div></li>
+    </ol>
+    <p class="prose muted">Source: <a href="https://docs.jfrog.com/security/docs/create-policies" target="_blank" rel="noopener">JFrog - Create Policies</a>.</p>
+  </section>
+
+  <section id="lab-watch" class="section">
+    <span class="kicker kicker-lab">Lab B</span>
+    <h2>Lab B: create a watch and attach the policy</h2>
+    <div class="panel-intro">
+      <p>Goal: point the policy from Lab A at a real repository so findings start becoming violations.</p>
+    </div>
+    <ol class="lab-steps">
+      <li><span class="ls-n">1</span><div><b>New Watch.</b> Still under <b>Xray &rarr; Watches &amp; Policies</b>, click <b>New Watch</b> and give it a unique name, for example <code>prod-repos-watch</code>.</div></li>
+      <li><span class="ls-n">2</span><div><b>Add resources.</b> Click <b>Add Resources</b> and select what to monitor - a <b>Repository</b> (e.g. your production Docker repo), a <b>Build</b>, a <b>Release Bundle</b>, or a <b>Project</b>. Click <b>Apply</b>.</div></li>
+      <li><span class="ls-n">3</span><div><b>Attach the policy.</b> Link the <code>prod-security-baseline</code> policy from Lab A. A Watch can carry several policies - add a license policy here too if you have one.</div></li>
+      <li><span class="ls-n">4</span><div><b>Save &amp; apply.</b> Save the Watch. Xray evaluates the in-scope resources against the attached policies and starts generating violations on matches.</div></li>
+      <li><span class="ls-n">5</span><div><b>Verify.</b> Open the Watch and review its violations. Seeing the High/Critical findings you expected confirms the policy and scope line up.</div></li>
+    </ol>
+    <div class="callout callout-q">
+      <p class="callout-title">Reminder you will thank yourself for</p>
+      <p>If you created the policy but see no violations, check that a Watch actually attaches it to the right resource. A policy with no Watch is inert by design.</p>
+    </div>
+    <p class="prose muted">Source: <a href="https://docs.jfrog.com/security/docs/create-watches" target="_blank" rel="noopener">JFrog - Create Watches</a>.</p>
+  </section>
+
+  <section id="connect" class="section">
+    <span class="kicker kicker-x">Connections</span>
+    <h2>How this connects to the rest of the platform</h2>
+    <p class="prose">Policies and Watches are the engine; other pages show where that engine plugs in across the software lifecycle:</p>
+    <ul class="feature-list">
+      <li><b>Shift left.</b> The same policies drive earlier feedback - in the IDE and on pull requests - covered on <a href="frogbot.html">Frogbot &amp; IDE</a>.</li>
+      <li><b>Promotion gates.</b> A Watch on a staging repo can block promotion to release when a High/Critical CVE is present - see the worked example on <a href="build-promotion.html#pattern">Build promotion</a>.</li>
+      <li><b>The basics.</b> If indexing, scanning, or the Policy-vs-Watch split still feel fuzzy, the <a href="fundamentals.html#xray">Fundamentals</a> page covers them from zero.</li>
+    </ul>
+  </section>
+
+  <section id="recap-box" class="section">
+    <div class="recap">
+      <h2>Recap</h2>
+      <ul>
+        <li><b>Policy = rules, Watch = scope.</b> Nothing is enforced until a Watch attaches a Policy to a resource; the result of a match is a <b>violation</b>.</li>
+        <li><b>Three policy types.</b> Security (CVEs, malicious), License (banned or allowed lists), Operational risk (stale, EOL, deprecated). One type per policy; attach several policies to one Watch.</li>
+        <li><b>Sharpen security rules</b> with minimal severity or a CVSS range, plus <b>fix-available</b> to cut noise.</li>
+        <li><b>Actions</b> are notify (email, webhook, Jira) or block (fail build, block download, block bundle promotion). Blocking actions support a <b>grace period</b> for safe rollout.</li>
+        <li><b>Watches</b> target repositories, builds, release bundles, or projects. Use one Watch per environment.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="sources" class="section">
+    <span class="kicker">Sources &amp; further reading</span>
+    <h2>Sources / further reading</h2>
+    <ul class="feature-list">
+      <li><a href="https://docs.jfrog.com/security/docs/create-policies" target="_blank" rel="noopener">JFrog Docs - Create Policies</a> (policy types, rule conditions, enforcement actions, grace periods).</li>
+      <li><a href="https://docs.jfrog.com/security/docs/create-watches" target="_blank" rel="noopener">JFrog Docs - Create Watches</a> (resources, attaching policies, best practices).</li>
+      <li><a href="https://docs.jfrog.com/security/docs/watches-in-jfrog-xray" target="_blank" rel="noopener">JFrog Docs - Watches in JFrog Xray</a> (what a Watch is and what it targets).</li>
+      <li><a href="https://jfrog.com/help/r/jfrog-security-documentation/creating-xray-policies-and-rules" target="_blank" rel="noopener">JFrog Help - Policy and Governance</a> (policies across the SDLC, best practices).</li>
+    </ul>
+  </section>
+
+
+  <nav class="page-nav" aria-label="Page navigation">
+    <a href="release-bundles.html"><span class="pn-dir">← Previous</span><span class="pn-title">Release Bundles & Distribution</span></a>
+    <a class="pn-next" href="rest-api.html"><span class="pn-dir">Next →</span><span class="pn-title">Artifactory REST API</span></a>
+  </nav>
+
+  <footer class="footer">
+    <p>All facts link to primary JFrog documentation, current as of June 2026. Product names belong to JFrog Ltd.</p>
+  </footer>
+</main>
+
+<div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true" aria-label="Search">
+  <div class="search-box">
+    <div class="search-input-row">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="Search concepts, commands, CLI…" autocomplete="off" spellcheck="false" />
+      <span class="search-esc">esc</span>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+    <div class="search-foot">
+      <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span><span><kbd>&crarr;</kbd> all results</span><span><kbd>&#8984;</kbd><kbd>&crarr;</kbd> open section</span>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/app.js"></script>
+</body>
+</html>

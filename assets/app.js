@@ -24,6 +24,7 @@ const NAV = [
     { href: 'pages/release-bundles.html', label: 'Release Bundles & Distribution' },
   ]},
   { group: 'Automation & security', links: [
+    { href: 'pages/xray-policies-watches.html', label: 'Xray Policies & Watches' },
     { href: 'pages/rest-api.html', label: 'Artifactory REST API' },
     { href: 'pages/frogbot.html', label: 'Frogbot & IDE' },
     { href: 'pages/pipelines.html', label: 'JFrog Pipelines' },

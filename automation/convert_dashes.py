@@ -22,11 +22,24 @@ REPO = Path(__file__).resolve().parent.parent
 EXTS = {".html", ".css", ".js", ".py", ".md", ".yml", ".yaml",
         ".json", ".txt"}
 
-# Directories never to touch.
-EXCLUDE_DIRS = {".git", "_diagrams", "_docx", "__pycache__", "node_modules"}
+# Directories never to touch. `.claude` holds Claude Code tooling and skills,
+# not site content - it is never part of the page_data -> pages -> docx pipeline
+# that the dash rule protects, and its skill files legitimately document the
+# forbidden dash forms (like this script and AGENTS.md do). Converting them
+# would corrupt the documentation, so the whole tree is exempt.
+EXCLUDE_DIRS = {".git", ".claude", "_diagrams", "_docx", "__pycache__", "node_modules"}
 
 # Don't rewrite this script itself (it intentionally documents the characters).
 SELF = Path(__file__).resolve()
+
+# Files that legitimately contain the forbidden dash forms and must NOT be
+# rewritten. AGENTS.md / DECISIONS.md document the rule itself; sync_to_drive.py
+# uses the U+2014 / U+2013 escapes as CODE - it matches existing Google
+# Doc names that were created with those dashes so it can update them in place
+# and preserve their Drive file IDs (NotebookLM source links depend on this).
+# Flattening those escapes would silently break ID preservation. Matched by file
+# name, repo-wide.
+EXCLUDE_FILES = {"AGENTS.md", "DECISIONS.md", "sync_to_drive.py"}
 
 EM = "\u2014"   # —
 EN = "\u2013"   # –
@@ -49,6 +62,8 @@ def convert_text(s: str) -> str:
 
 def should_skip(p: Path) -> bool:
     if p.resolve() == SELF:
+        return True
+    if p.name in EXCLUDE_FILES:
         return True
     parts = set(p.parts)
     if parts & EXCLUDE_DIRS:

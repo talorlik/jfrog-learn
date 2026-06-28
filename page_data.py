@@ -7,6 +7,7 @@ NAV_ORDER = [
     ("replication-federation.html", "Replication & Federation"),
     ("build-promotion.html", "Build promotion"),
     ("release-bundles.html", "Release Bundles & Distribution"),
+    ("xray-policies-watches.html", "Xray Policies & Watches"),
     ("rest-api.html", "Artifactory REST API"),
     ("frogbot.html", "Frogbot & IDE"),
     ("pipelines.html", "JFrog Pipelines"),
@@ -32,7 +33,449 @@ def chain(file):
 PAGE_LIST = []
 
 # =====================================================================
-# 1) REPLICATION & FEDERATION
+# 1) FUNDAMENTALS (migrated from the former static page)
+# =====================================================================
+_p = {
+ "file": "fundamentals.html",
+ "title": 'Fundamentals',
+ "desc": 'JFrog Artifactory & Xray from first principles: the problem they solve, core vocabulary, the 4 repository types, deep recursive scanning, policies & watches, and three hands-on lab tracks.',
+ "badges": '<span class="lvl lvl-art">Artifactory</span><span class="lvl lvl-xray">Xray</span><span class="lvl">Beginner → core</span>',
+ "h1": 'Artifactory &amp; Xray from first principles',
+ "lede": "Two products, one job: control every <em>binary</em> your software is built from, and prove it's safe. This page builds the whole picture from the bottom up - plain-language concepts, diagrams, comparison tables, then real hands-on labs.",
+ "sections": [
+    {"id": "problem", "label": "The problem it solves"},
+    {"id": "glossary", "label": "Vocabulary first"},
+    {"id": "artifactory", "label": "What Artifactory is"},
+    {"id": "repos", "label": "The 4 repository types"},
+    {"id": "architecture", "label": "How it fits together"},
+    {"id": "packages", "label": "Package types"},
+    {"id": "xray", "label": "What Xray is"},
+    {"id": "xray-how", "label": "How scanning works"},
+    {"id": "policies", "label": "Policies & Watches"},
+    {"id": "labs", "label": "Choose your track"},
+    {"id": "cli", "label": "CLI cheat sheet"},
+    {"id": "mental-model", "label": "Full mental model"},
+],
+ "body": """
+
+  <!-- THE PROBLEM -->
+  <section id="problem" class="section">
+    <span class="kicker">Foundations</span>
+    <h2>The problem these tools solve</h2>
+    <p class="prose">Before any product names, understand the pain. When you build software, your code is only a small part of what actually ships. The rest is <strong>binaries</strong> - compiled libraries, container images, packages - that you either build yourself or download from the internet.</p>
+
+    <div class="callout callout-q">
+      <p class="callout-title">What is a "binary" / "artifact"?</p>
+      <p>Anything your build produces or consumes that isn't source code: a <code>.jar</code>, an <code>npm</code> package, a Docker image, a Python wheel, a Helm chart, a compiled <code>.exe</code>. The generic industry word is <strong>artifact</strong>. JFrog calls itself an "artifact repository manager" - a place to store and serve these.</p>
+    </div>
+
+    <p class="prose">Without a central system, teams hit four recurring problems:</p>
+    <div class="cards">
+      <div class="card"><span class="card-num">01</span><h3>Where do builds get dependencies?</h3><p>Everyone pulls directly from the public internet (npm registry, Docker Hub, Maven Central). It's slow, breaks when those sites are down, and you have no control over what enters your builds.</p></div>
+      <div class="card"><span class="card-num">02</span><h3>Where do <em>our</em> builds go?</h3><p>You compile something internally. Where does it live so other teams and your CI/CD can reliably grab the exact version? Email and shared drives don't scale.</p></div>
+      <div class="card"><span class="card-num">03</span><h3>Is any of it dangerous?</h3><p>A public package might carry a known vulnerability (a <strong>CVE</strong>) or a banned open-source license. You need to know <em>before</em> it reaches production - not after a breach.</p></div>
+      <div class="card"><span class="card-num">04</span><h3>Can we prove what's inside?</h3><p>Auditors and customers increasingly ask: "List every component in this release." That list is called an <strong>SBOM</strong>. Producing it by hand is impossible.</p></div>
+    </div>
+
+    <div class="split">
+      <div class="split-item"><span class="tag tag-art">Artifactory</span><p>solves problems <b>1, 2 &amp; 4</b> - it's the single, trusted home for all binaries flowing in and out.</p></div>
+      <div class="split-item"><span class="tag tag-xray">Xray</span><p>solves problem <b>3</b> (and helps with 4) - it continuously scans everything Artifactory stores for vulnerabilities and license risks.</p></div>
+    </div>
+    <p class="prose muted">They are designed to work together: Artifactory is the warehouse, Xray is the security inspector standing inside it. <a href="https://jfrog.com/blog/what-is-artifactory-jfrog/" target="_blank" rel="noopener">JFrog - What is Artifactory</a>.</p>
+  </section>
+
+  <!-- GLOSSARY -->
+  <section id="glossary" class="section">
+    <span class="kicker">Foundations</span>
+    <h2>Vocabulary you'll see everywhere</h2>
+    <p class="prose">JFrog docs assume you know these. Skim now, refer back later.</p>
+    <div class="glossary">
+      <div class="gloss"><dt>Artifact / Binary</dt><dd>Any built/downloaded file: a package, image, library. The thing being stored.</dd></div>
+      <div class="gloss"><dt>Repository</dt><dd>A named container inside Artifactory that holds artifacts of one package type (e.g. a Docker repo, an npm repo).</dd></div>
+      <div class="gloss"><dt>Package type</dt><dd>The ecosystem format - Docker, Maven, npm, PyPI, Helm, etc. Artifactory "speaks" each one natively.</dd></div>
+      <div class="gloss"><dt>Registry</dt><dd>The package-ecosystem word for a repository (e.g. "Docker registry"). Same idea.</dd></div>
+      <div class="gloss"><dt>Dependency</dt><dd>A third-party artifact your code needs to build or run.</dd></div>
+      <div class="gloss"><dt>CVE</dt><dd>Common Vulnerabilities &amp; Exposures - a globally unique ID for a known security flaw, e.g. <code>CVE-2021-44228</code> (Log4Shell).</dd></div>
+      <div class="gloss"><dt>SCA</dt><dd>Software Composition Analysis - scanning the open-source pieces of your software for risk. This is Xray's core job.</dd></div>
+      <div class="gloss"><dt>SBOM</dt><dd>Software Bill of Materials - a complete, machine-readable inventory of every component in a release (formats: SPDX, CycloneDX).</dd></div>
+      <div class="gloss"><dt>JPD</dt><dd>JFrog Platform Deployment - one running instance of the JFrog platform (your server / cloud tenant).</dd></div>
+      <div class="gloss"><dt>build-info</dt><dd>Metadata Artifactory records about a build: which artifacts, which dependencies, which environment. Enables traceability.</dd></div>
+      <div class="gloss"><dt>Promotion</dt><dd>Moving an artifact from one repo to the next as it passes quality gates (dev → staging → release).</dd></div>
+      <div class="gloss"><dt>Watch + Policy</dt><dd>Xray's enforcement pair: a Policy defines the rules, a Watch says where to apply them. (Detailed later.)</dd></div>
+    </div>
+  </section>
+
+  <!-- ARTIFACTORY -->
+  <section id="artifactory" class="section">
+    <span class="kicker kicker-art">Artifactory</span>
+    <h2>What Artifactory actually is</h2>
+    <p class="prose"><strong>JFrog Artifactory is a universal binary repository manager</strong> - one central place to store, version, secure and serve every artifact your organization produces or depends on. "Universal" means it natively supports 40+ package formats (Docker, Maven, npm, PyPI, Helm, NuGet, Go, Terraform, even ML models) at the same time. <a href="https://jfrog.com/artifactory/" target="_blank" rel="noopener">JFrog Artifactory</a>.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">📦</span>
+      <div>
+        <p class="analogy-title">One-sentence analogy</p>
+        <p>Artifactory is a <strong>smart warehouse for software parts</strong>. Parts arrive from outside suppliers (the public internet), parts are manufactured in-house (your builds), and everything is catalogued, version-stamped, access-controlled, and handed out through a single front desk.</p>
+      </div>
+    </div>
+
+    <p class="prose">Three things make it more than a file server:</p>
+    <ul class="feature-list">
+      <li><b>It speaks every package language.</b> Your <code>npm install</code>, <code>docker pull</code>, or <code>mvn build</code> point at Artifactory and it behaves exactly like the native registry would.</li>
+      <li><b>It proxies and caches the internet.</b> Public dependencies pass <em>through</em> Artifactory once, get cached, and stay available even if the upstream source goes down. <a href="https://stackoverflow.com/questions/54112370/what-is-the-difference-between-local-repository-remote-respository-and-virtual" target="_blank" rel="noopener">Stack Overflow explanation</a>.</li>
+      <li><b>It's a control point.</b> Because everything flows through it, you can apply access control, scanning (Xray), and policies in one place. <a href="https://www.youtube.com/watch?v=1RwtO42In94" target="_blank" rel="noopener">JFrog overview</a>.</li>
+    </ul>
+  </section>
+
+  <!-- REPOSITORY TYPES -->
+  <section id="repos" class="section">
+    <span class="kicker kicker-art">Artifactory</span>
+    <h2>The 4 repository types (the core concept)</h2>
+    <p class="prose">If you learn only one thing about Artifactory, learn this. Every repository is one of four types. They combine into a clean pattern that every JFrog setup follows.</p>
+
+    <figure class="diagram" aria-label="Diagram of how the four repository types relate">
+      <div class="diag-grid">
+        <div class="diag-col">
+          <p class="diag-label">Outside world</p>
+          <div class="diag-node node-ext">Public registries<small>Docker Hub · npm · Maven Central · PyPI</small></div>
+        </div>
+        <div class="diag-arrow">proxy &amp; cache →</div>
+        <div class="diag-col">
+          <p class="diag-label">Inside Artifactory</p>
+          <div class="diag-node node-remote">REMOTE repo<small>caches external artifacts</small></div>
+          <div class="diag-node node-local">LOCAL repo<small>stores your own builds</small></div>
+          <div class="diag-bracket">▸ both wrapped by ▸</div>
+          <div class="diag-node node-virtual">VIRTUAL repo<small>one URL = local + remote combined</small></div>
+        </div>
+        <div class="diag-arrow">single URL →</div>
+        <div class="diag-col">
+          <p class="diag-label">Developer / CI</p>
+          <div class="diag-node node-dev">your build tool<small>npm · docker · mvn · pip</small></div>
+        </div>
+      </div>
+      <figcaption>The standard pattern: developers and CI talk to <b>one virtual repo URL</b>; Artifactory routes deploys to the local repo and resolves dependencies from local first, then the remote cache, then the internet. Federated repos (4th type) sit alongside for multi-site sync. <a href="https://docs.jfrog.com/artifactory/docs/repository-management" target="_blank" rel="noopener">JFrog Repository Management</a>.</figcaption>
+    </figure>
+
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Type</th><th>What it does</th><th>Can you upload to it?</th><th>Real-world use</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill pill-local">Local</span></td><td>Physically stores artifacts <em>your</em> org creates internally.</td><td><b class="yes">Yes</b> - this is your deploy target.</td><td>Your CI pushes built Docker images, release JARs, internal libraries here.</td></tr>
+          <tr><td><span class="pill pill-remote">Remote</span></td><td>A caching <em>proxy</em> for an external registry. Fetches on demand, caches locally.</td><td><b class="no">No</b> - artifacts arrive by proxying.</td><td>A proxy of Docker Hub or npm registry so builds are fast and survive outages.</td></tr>
+          <tr><td><span class="pill pill-virtual">Virtual</span></td><td>Aggregates many local + remote repos under <em>one URL</em>. Resolves in priority order.</td><td><b class="partial">Via default deploy target</b> (points to a local).</td><td>The single endpoint your developers configure. Hides internal/external complexity.</td></tr>
+          <tr><td><span class="pill pill-fed">Federated</span></td><td>A local repo auto-mirrored bi-directionally across multiple sites (JPDs).</td><td><b class="yes">Yes</b> - like a local, but synced.</td><td>Global teams (London ↔ Tokyo) sharing one source of truth. Enterprise tier.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose muted">Sources: <a href="https://docs.jfrog.com/artifactory/docs/managing-configuration-entities" target="_blank" rel="noopener">JFrog config entities</a>, <a href="https://jfrog.com/help/r/jfrog-federated-repositories/jfrog-federated-repositories" target="_blank" rel="noopener">JFrog Federated Repositories</a>. Local/remote/virtual need a Pro subscription; federated needs Enterprise X+.</p>
+
+    <div class="callout callout-tip">
+      <p class="callout-title">The "aha" moment</p>
+      <p>A <strong>virtual</strong> repo is the magic layer. Your <code>npm</code> client points at one URL. Behind it, Artifactory checks your <em>local</em> repo first (internal packages), then the <em>remote</em> cache (previously downloaded public packages), and only then reaches out to the public internet. The developer never has to know or care where a package lives. <a href="https://www.youtube.com/watch?v=bKp1Vif9oO4" target="_blank" rel="noopener">JFrog artifact management demo</a>.</p>
+    </div>
+    <p class="prose muted" style="margin-top:var(--space-6)">Want to go deeper on keeping repos in sync across sites? See <a href="replication-federation.html">Replication &amp; Federation</a>.</p>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section id="architecture" class="section">
+    <span class="kicker kicker-art">Artifactory</span>
+    <h2>How it fits in your pipeline</h2>
+    <p class="prose">Zoom out. Here's where Artifactory sits in a normal CI/CD flow, and where Xray plugs in. This is the picture to hold in your head.</p>
+
+    <figure class="flow" aria-label="End-to-end pipeline diagram showing Artifactory and Xray">
+      <div class="flow-row">
+        <div class="flow-step"><span class="flow-step-n">1</span><b>Developer</b><small>writes code, runs build locally</small></div>
+        <span class="flow-conn">→</span>
+        <div class="flow-step"><span class="flow-step-n">2</span><b>CI/CD</b><small>GitHub Actions builds artifact</small></div>
+        <span class="flow-conn">→</span>
+        <div class="flow-step flow-art"><span class="flow-step-n">3</span><b>Artifactory</b><small>stores artifact + records build-info</small></div>
+      </div>
+      <div class="flow-row flow-row-down"><span class="flow-down">↓ every artifact is indexed &amp; scanned</span></div>
+      <div class="flow-row">
+        <div class="flow-step flow-xray"><span class="flow-step-n">4</span><b>Xray</b><small>scans for CVEs &amp; license risk</small></div>
+        <span class="flow-conn">→</span>
+        <div class="flow-step"><span class="flow-step-n">5</span><b>Policy gate</b><small>pass → promote · fail → block/alert</small></div>
+        <span class="flow-conn">→</span>
+        <div class="flow-step"><span class="flow-step-n">6</span><b>Production</b><small>only approved artifacts ship</small></div>
+      </div>
+      <figcaption>Artifacts get <em>promoted</em> through repositories as they pass each gate. Xray watches the whole warehouse continuously, so a CVE disclosed tomorrow still flags an artifact you stored last month. <a href="https://jfrog.com/whitepaper/best-practices-for-introducing-jfrog-xray-into-your-devsecops-process/" target="_blank" rel="noopener">JFrog DevSecOps best practices</a>.</figcaption>
+    </figure>
+
+    <div class="callout callout-q">
+      <p class="callout-title">What's "promotion"?</p>
+      <p>You typically have separate repos per maturity stage: <code>dev-local</code> → <code>staging-local</code> → <code>release-local</code>. Promotion = moving (or copying) an artifact up a stage once it passes tests and scans. Same binary, no rebuild - so what you tested is exactly what ships. Full walkthrough on the <a href="build-promotion.html">Build promotion</a> page.</p>
+    </div>
+  </section>
+
+  <!-- PACKAGE TYPES -->
+  <section id="packages" class="section">
+    <span class="kicker kicker-art">Artifactory</span>
+    <h2>Package types it supports</h2>
+    <p class="prose">"Universal" is the selling point: 40+ ecosystems, one platform. You don't need them all - pick the ones your stack uses. Here are the common ones a DevOps team touches. <a href="https://docs.jfrog.com/artifactory/docs/supported-package-types" target="_blank" rel="noopener">Full list</a>.</p>
+    <div class="chips">
+      <span class="chip">Docker / OCI</span><span class="chip">Helm</span><span class="chip">Maven</span><span class="chip">Gradle</span><span class="chip">npm</span><span class="chip">PyPI</span><span class="chip">Go</span><span class="chip">NuGet</span><span class="chip">Cargo (Rust)</span><span class="chip">Conan (C++)</span><span class="chip">Debian</span><span class="chip">RPM / YUM</span><span class="chip">Terraform</span><span class="chip">Conda</span><span class="chip">Hugging Face (ML)</span><span class="chip">RubyGems</span><span class="chip">Generic (anything)</span>
+    </div>
+    <div class="callout callout-tip">
+      <p class="callout-title">DevOps reality check</p>
+      <p>For a typical cloud-native team, you'll create repos for: <b>Docker</b> (your images), <b>Helm</b> (your charts), and a remote proxy of <b>Docker Hub</b>. Add <b>npm</b>/<b>PyPI</b>/<b>Go</b> remotes per language. The <b>Generic</b> type stores literally anything (tarballs, configs, ML weights) when no native type fits.</p>
+    </div>
+  </section>
+
+  <!-- XRAY -->
+  <section id="xray" class="section">
+    <span class="kicker kicker-x">Xray</span>
+    <h2>What Xray actually is</h2>
+    <p class="prose"><strong>JFrog Xray is a Software Composition Analysis (SCA) tool.</strong> It scans everything Artifactory stores - packages, container images, builds - to detect security vulnerabilities, malicious packages, license risks, and operational issues. It's natively integrated with Artifactory, so binary scanning turns on with a single checkbox. <a href="https://docs.jfrog.com/security/docs/xray" target="_blank" rel="noopener">JFrog Xray docs</a>.</p>
+
+    <div class="analogy analogy-x">
+      <span class="analogy-icon" aria-hidden="true">🔍</span>
+      <div>
+        <p class="analogy-title">One-sentence analogy</p>
+        <p>If Artifactory is the warehouse, Xray is the <strong>security inspector living inside it</strong> - X-raying every box that arrives, cross-checking it against a global database of known threats, and raising an alarm (or locking the door) when something dangerous is found.</p>
+      </div>
+    </div>
+
+    <div class="cards cards-x">
+      <div class="card"><h3>🛡️ Vulnerabilities</h3><p>Matches components against CVE databases (NVD, GitHub, vendor feeds + JFrog's own security research) to find known flaws.</p></div>
+      <div class="card"><h3>⚖️ License compliance</h3><p>Flags open-source licenses your org bans or must track (e.g. GPL in a proprietary product).</p></div>
+      <div class="card"><h3>🐛 Malicious packages</h3><p>Detects deliberately poisoned packages - including malicious ML models on Hugging Face.</p></div>
+      <div class="card"><h3>📋 SBOM &amp; impact</h3><p>Generates a full Software Bill of Materials and shows the impact graph of any flaw across your components.</p></div>
+    </div>
+    <p class="prose muted">Sources: <a href="https://cloudsecurity.org/tool/jfrog-xray" target="_blank" rel="noopener">Xray architecture overview</a>, <a href="https://jfrog.com/help/r/jfrog-security-user-guide/products/xray/features-and-capabilities/sca/sbom" target="_blank" rel="noopener">JFrog SBOM</a>.</p>
+  </section>
+
+  <!-- XRAY HOW -->
+  <section id="xray-how" class="section">
+    <span class="kicker kicker-x">Xray</span>
+    <h2>How scanning actually works</h2>
+    <p class="prose">Xray's superpower is <strong>deep recursive scanning</strong>. It doesn't just look at your top-level package - it peels open every layer: dependencies, dependencies-of-dependencies, files inside Docker layers, archives inside archives. <a href="https://jfrog.com/article/impact-analysis/" target="_blank" rel="noopener">JFrog Impact Analysis</a>.</p>
+
+    <figure class="diagram diagram-x" aria-label="Deep recursive scanning diagram">
+      <p class="diag-label center">Deep recursive scan - peeling the onion</p>
+      <div class="onion">
+        <div class="onion-layer l1"><span>Your Docker image</span>
+          <div class="onion-layer l2"><span>Base OS layer</span>
+            <div class="onion-layer l3"><span>App package (npm/jar)</span>
+              <div class="onion-layer l4"><span>Direct dependency</span>
+                <div class="onion-layer l5"><span class="cve-found">↳ vulnerable lib · CVE-2021-44228</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <figcaption>Xray finds the vulnerable component buried 5 levels deep, then uses <b>impact analysis</b> to show every artifact, build, and image affected by it. <a href="https://dev.to/jfrog/easy-automatic-vulnerability-detection-in-the-jfrog-platform-5928" target="_blank" rel="noopener">JFrog vulnerability detection</a>.</figcaption>
+    </figure>
+
+    <h3 class="subhead">The scanning lifecycle</h3>
+    <ol class="steps">
+      <li><b>Index.</b> When a repo is marked for Xray, every artifact is broken into its component graph and indexed.</li>
+      <li><b>Scan.</b> Each component is matched against the vulnerability + license databases.</li>
+      <li><b>Continuous re-check.</b> When a <em>new</em> CVE is published, Xray re-evaluates already-stored artifacts - no rescan needed. This is why it catches yesterday's "safe" image today.</li>
+      <li><b>Report &amp; enforce.</b> Findings appear as <em>violations</em> (when they break a policy) with severity, affected components, and remediation (which version fixes it). <a href="https://docs.jfrog.com/security/docs/understanding-and-analyzing-xray-scan-results-p" target="_blank" rel="noopener">Understanding scan results</a>.</li>
+    </ol>
+
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Where you can trigger a scan</th><th>How</th><th>Best for</th></tr></thead>
+        <tbody>
+          <tr><td>Inside Artifactory (automatic)</td><td>Enable Xray indexing on a repo - scans on upload</td><td>Continuous coverage of everything stored</td></tr>
+          <tr><td>CI/CD pipeline</td><td><code>jf build-scan</code> / <code>jf scan</code></td><td>Failing a build before bad code ships</td></tr>
+          <tr><td>Local machine (shift-left)</td><td><code>jf scan</code> on source, <code>jf docker scan</code> on an image</td><td>Catching issues before you even commit</td></tr>
+          <tr><td>IDE / Pull request</td><td>JFrog IDE plugins &amp; Frogbot</td><td>Instant developer feedback + autofix PRs</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose muted">Source: <a href="https://docs.jfrog.com/integrations/docs/cli-command-summaries" target="_blank" rel="noopener">JFrog CLI command summaries</a>. For PR scanning and IDE setup, see <a href="frogbot.html">Frogbot &amp; IDE integration</a>.</p>
+  </section>
+
+  <!-- POLICIES -->
+  <section id="policies" class="section">
+    <span class="kicker kicker-x">Xray</span>
+    <h2>Policies &amp; Watches (how enforcement works)</h2>
+    <p class="prose">Finding problems is useless unless you act on them. Xray's enforcement runs on two linked objects. This trips up newcomers, so here's the clean split:</p>
+
+    <div class="pw-grid">
+      <div class="pw-card pw-policy">
+        <span class="pw-badge">Defines the RULES</span>
+        <h3>Policy</h3>
+        <p>A set of rules describing what counts as a problem and what to do about it.</p>
+        <ul>
+          <li><b>Type:</b> Security · License · Operational risk</li>
+          <li><b>Rule:</b> e.g. "severity ≥ High" or "license = GPL"</li>
+          <li><b>Action:</b> notify · fail build · block download · create ticket</li>
+        </ul>
+      </div>
+      <div class="pw-link" aria-hidden="true">
+        <span>applied via</span>
+        <svg width="40" height="24" viewBox="0 0 40 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h32M28 6l8 6-8 6"/></svg>
+      </div>
+      <div class="pw-card pw-watch">
+        <span class="pw-badge">Defines the SCOPE</span>
+        <h3>Watch</h3>
+        <p>A binding that says <em>where</em> a policy applies and turns it on.</p>
+        <ul>
+          <li><b>Targets:</b> specific repos, builds, or projects</li>
+          <li><b>Attaches:</b> one or more policies</li>
+          <li><b>Result:</b> matches → <em>violations</em> get generated</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-tip">
+      <p class="callout-title">Remember it this way</p>
+      <p><b>Policy = the law</b> (what's illegal + the punishment). <b>Watch = the jurisdiction + the police</b> (where the law applies and who enforces it). A finding only becomes a <em>violation</em> when a Watch points a Policy at the repo where it lives. <a href="https://docs.jfrog.com/security/docs/policies-in-jfrog-xray" target="_blank" rel="noopener">JFrog Policy &amp; Governance</a>.</p>
+    </div>
+
+    <h3 class="subhead">Severity levels you'll triage</h3>
+    <div class="sev-row">
+      <span class="sev sev-crit">Critical</span>
+      <span class="sev sev-high">High</span>
+      <span class="sev sev-med">Medium</span>
+      <span class="sev sev-low">Low</span>
+      <span class="sev sev-unknown">Unknown</span>
+    </div>
+    <p class="prose muted">A common starter policy: "generate violations for <b>High + Critical</b> security issues, but only when a fixed version is available" - so you're not alerted on problems you can't yet fix. <a href="https://stackoverflow.com/questions/75474890/jfrog-xray-violations-should-not-occure-for-libraries-where-there-is-no-fix-vers" target="_blank" rel="noopener">Stack Overflow on fix-version rule</a>.</p>
+  </section>
+
+  <!-- LABS -->
+  <section id="labs" class="section">
+    <span class="kicker kicker-lab">Hands-on</span>
+    <h2>Choose your hands-on track</h2>
+    <p class="prose">Reading gets you understanding; doing gets you skill. Pick a track based on how deep you want to go. All three reach the same goal: <b>store an artifact, then scan it with Xray.</b></p>
+
+    <div class="tabs" id="labTabs">
+      <div class="tab-bar" role="tablist" aria-label="Lab tracks">
+        <button class="tab active" role="tab" aria-selected="true" data-tab="cloud">☁️ JFrog Cloud (free tier)</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="docker">🐳 Local Docker (self-hosted)</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="concepts">⌨️ Concepts + CLI</button>
+      </div>
+
+      <div class="tab-panel active" role="tabpanel" data-panel="cloud">
+        <p class="panel-intro"><b>Fastest path to a working platform.</b> JFrog runs a free cloud tier (AWS/Azure/GCP) - no install, ready in minutes. Best first stop. <a href="https://jfrog.com/start-free/" target="_blank" rel="noopener">Start free</a>.</p>
+        <ol class="lab-steps">
+          <li><span class="ls-n">1</span><div><b>Sign up for the free cloud subscription.</b> Go to <a href="https://jfrog.com/start-free/" target="_blank" rel="noopener">jfrog.com/start-free</a> → choose Cloud (free). You get a tenant like <code>yourname.jfrog.io</code> with Artifactory + Xray. Free tier: ~2&nbsp;GB storage, 10&nbsp;GB transfer. <a href="https://devops.com/jfrog-adds-free-devops-tier-in-the-cloud/" target="_blank" rel="noopener">Free tier announcement</a>.</div></li>
+          <li><span class="ls-n">2</span><div><b>Log in to the web UI.</b> Explore the two main tabs: <em>Application</em> (browse repos/artifacts) and <em>Administration</em> (create repos, configure Xray).</div></li>
+          <li><span class="ls-n">3</span><div><b>Create your first repositories.</b> Administration → Repositories → <b>+ Add Repository</b>. Make a <span class="pill pill-local">Local</span> Docker repo (<code>docker-local</code>), a <span class="pill pill-remote">Remote</span> proxy of Docker Hub (<code>docker-remote</code>), and a <span class="pill pill-virtual">Virtual</span> repo combining both (<code>docker</code>). <a href="https://medium.com/@vniranjan251203/jfrog-artifactory-and-maven-package-type-2fe0af1765b0" target="_blank" rel="noopener">Repo creation walkthrough</a>.</div></li>
+          <li><span class="ls-n">4</span><div><b>Connect the CLI.</b> Install JFrog CLI (see the CLI tab) then run <code>jf c add</code> and paste your <code>*.jfrog.io</code> URL + a token. Verify with <code>jf rt ping</code>.</div></li>
+          <li><span class="ls-n">5</span><div><b>Push an image.</b> <code>jf docker push yourname.jfrog.io/docker-local/demo:1.0</code> - then find it in the UI under your local repo.</div></li>
+          <li><span class="ls-n">6</span><div><b>Turn on Xray.</b> Administration → Xray → <b>Indexed Resources</b> → add <code>docker-local</code>. The image scans automatically.</div></li>
+          <li><span class="ls-n">7</span><div><b>Create a Policy + Watch.</b> Administration → Xray → <b>Watches &amp; Policies</b>. Make a Security policy (rule: severity ≥ High, action: notify) and a Watch targeting <code>docker-local</code>. <a href="https://www.youtube.com/watch?v=ztcDI47FnmA" target="_blank" rel="noopener">Policies/watches video</a>.</div></li>
+          <li><span class="ls-n">8</span><div><b>Read the results.</b> Open the artifact → <em>Xray</em> tab. Review vulnerabilities by severity, affected components, and fix versions. You've completed the loop. 🎉</div></li>
+        </ol>
+        <div class="callout callout-tip"><p class="callout-title">Why start here</p><p>Zero infrastructure to maintain, real cloud UI, and everything in this guide works out of the box. Graduate to local Docker once you want to understand the moving parts.</p></div>
+      </div>
+
+      <div class="tab-panel" role="tabpanel" data-panel="docker">
+        <p class="panel-intro"><b>Run the whole platform on your Mac (OrbStack/Docker).</b> You'll see exactly what services make up Artifactory + Xray. Requires Docker Engine 25+ &amp; Docker Compose v2; ARM64 (Apple Silicon) is supported via Docker. <a href="https://jfrog.com/start-free/install/" target="_blank" rel="noopener">Install guide</a>.</p>
+        <div class="callout callout-q"><p class="callout-title">Heads up on resources</p><p>The full platform (Artifactory + Xray + PostgreSQL + RabbitMQ) wants ~4 CPU / 8&nbsp;GB RAM. Your 8&nbsp;GB Mac setup is the realistic minimum - close other heavy apps.</p></div>
+        <ol class="lab-steps">
+          <li><span class="ls-n">1</span><div><b>Download the trial Docker-Compose bundle.</b><pre class="code"><code>curl -L "https://releases.jfrog.io/artifactory/jfrog-prox/org/artifactory/pro/docker/jfrog-platform-trial-prox/[RELEASE]/jfrog-platform-trial-prox-[RELEASE]-compose.tar.gz" -o jfrog-compose.tar.gz</code></pre><a href="https://jfrog.com/start-free/install/" target="_blank" rel="noopener">Source</a></div></li>
+          <li><span class="ls-n">2</span><div><b>Extract &amp; enter the directory.</b><pre class="code"><code>tar -xvf jfrog-compose.tar.gz
+cd jfrog-platform-trial-prox-*</code></pre></div></li>
+          <li><span class="ls-n">3</span><div><b>Run the config script</b> (sets up folder structure + the <code>.env</code> file Compose uses). Follow its prompts.</div></li>
+          <li><span class="ls-n">4</span><div><b>Start everything.</b><pre class="code"><code>docker compose -p trial-pro up -d</code></pre>Give it a few minutes - Xray boots after Artifactory and PostgreSQL are healthy. <a href="https://docs.jfrog.com/installation/docs/installing-xray" target="_blank" rel="noopener">Xray install steps</a>.</div></li>
+          <li><span class="ls-n">5</span><div><b>Open the UI.</b> Browse to <code>http://localhost:8082</code>. Default login <code>admin</code> / <code>password</code> - change it immediately.</div></li>
+          <li><span class="ls-n">6</span><div><b>Apply your free license.</b> Paste the license key from your JFrog account to unlock Xray.</div></li>
+          <li><span class="ls-n">7</span><div><b>From here, follow Cloud steps 3-8</b> - create local/remote/virtual repos, push an image, enable Xray indexing, set a policy + watch, read results. The UI is identical.</div></li>
+          <li><span class="ls-n">8</span><div><b>Tear down cleanly.</b><pre class="code"><code>docker compose -p trial-pro down</code></pre>Add <code>-v</code> only if you want to wipe the data volumes too.</div></li>
+        </ol>
+        <p class="prose muted">Prefer Kubernetes? See <a href="kubernetes-helm.html">Kubernetes / Helm setup</a> for installing Artifactory on a cluster with the JFrog Helm charts.</p>
+      </div>
+
+      <div class="tab-panel" role="tabpanel" data-panel="concepts">
+        <p class="panel-intro"><b>For when you don't want to run a server - just learn the commands &amp; integration patterns.</b> The JFrog CLI binary is <code>jf</code>. One tool drives Artifactory and Xray. <a href="https://docs.jfrog.com/integrations/docs/cli-command-summaries" target="_blank" rel="noopener">CLI summaries</a>.</p>
+        <ol class="lab-steps">
+          <li><span class="ls-n">1</span><div><b>Install the CLI</b> (macOS, Homebrew):<pre class="code"><code>brew install jfrog-cli</code></pre>Or one-liner: <code>curl -fL https://install-cli.jfrog.io | sh</code>. Verify: <code>jf --version</code>.</div></li>
+          <li><span class="ls-n">2</span><div><b>Configure a server connection.</b><pre class="code"><code>jf c add my-jpd --url=https://yourname.jfrog.io --interactive</code></pre>Use an access token, not a password. Test: <code>jf rt ping</code>.</div></li>
+          <li><span class="ls-n">3</span><div><b>Scan your source code (shift-left)</b> - no upload needed:<pre class="code"><code>jf scan .</code></pre>Scans the dependencies in the current project against Xray. <a href="https://github.com/jfrog/documentation/blob/main/jfrog-applications/jfrog-applications/jfrog-cli/cli-for-jfrog-security/how-tos/scan-your-source-code.md" target="_blank" rel="noopener">Source-scan docs</a>.</div></li>
+          <li><span class="ls-n">4</span><div><b>Scan a local Docker image:</b><pre class="code"><code>jf docker scan my-app:1.0.0</code></pre>First run downloads ~100&nbsp;MB of Xray scanner binaries. <a href="https://docs.jfrog.com/artifactory/docs/jf-docker" target="_blank" rel="noopener">jf docker docs</a>.</div></li>
+          <li><span class="ls-n">5</span><div><b>Scan an artifact already in Artifactory, against a watch:</b><pre class="code"><code>jf xr scan --target "docker-local/demo:1.0" --watches "my-watch"</code></pre><a href="https://deepwiki.com/jfrog/jfrog-cli/3.2-xray-commands" target="_blank" rel="noopener">Xray CLI commands</a>.</div></li>
+          <li><span class="ls-n">6</span><div><b>Wire it into GitHub Actions</b> (fail the build on Critical issues):<pre class="code"><code>- name: Security Scan
+  run: jf build-scan ${{ github.repository }} ${{ github.run_number }} --fail=true --vuln=Critical</code></pre><a href="https://docs.jfrog.com/integrations/docs/cli-command-summaries" target="_blank" rel="noopener">CI integration</a>. Note: the build must be added under <em>Administration → Xray → Indexed Resources</em> first.</div></li>
+        </ol>
+        <div class="callout callout-tip"><p class="callout-title">Mental model for the CLI</p><p><code>jf rt …</code> = Artifactory (uploads, downloads, repos). <code>jf xr …</code> = Xray (scans). <code>jf scan</code> / <code>jf docker scan</code> / <code>jf build-scan</code> = convenient shortcuts that combine both.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLI CHEAT SHEET -->
+  <section id="cli" class="section">
+    <span class="kicker kicker-lab">Hands-on</span>
+    <h2>CLI cheat sheet</h2>
+    <p class="prose">The commands you'll reach for most. <code>jf</code> is the binary; older docs use <code>jfrog</code>. <a href="https://deepwiki.com/jfrog/jfrog-cli/3.2-xray-commands" target="_blank" rel="noopener">Reference</a>.</p>
+    <div class="table-wrap">
+      <table class="datatable mono-table">
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>jf c add</code></td><td>Add a JFrog server connection</td></tr>
+          <tr><td><code>jf rt ping</code></td><td>Test the Artifactory connection</td></tr>
+          <tr><td><code>jf rt u &lt;file&gt; &lt;repo&gt;</code></td><td>Upload (deploy) an artifact</td></tr>
+          <tr><td><code>jf rt dl &lt;repo/path&gt;</code></td><td>Download an artifact</td></tr>
+          <tr><td><code>jf docker push &lt;image&gt;</code></td><td>Push a Docker image (auto-login + build-info)</td></tr>
+          <tr><td><code>jf scan .</code></td><td>Scan local source dependencies with Xray</td></tr>
+          <tr><td><code>jf docker scan &lt;image&gt;</code></td><td>Scan a local Docker image</td></tr>
+          <tr><td><code>jf xr scan --target … --watches …</code></td><td>Scan an artifact in Artifactory against a watch</td></tr>
+          <tr><td><code>jf build-scan &lt;name&gt; &lt;num&gt; --fail=true</code></td><td>Scan a build in CI; fail on violations</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- MENTAL MODEL -->
+  <section id="mental-model" class="section">
+    <span class="kicker">Synthesis</span>
+    <h2>The full mental model on one screen</h2>
+    <p class="prose">Everything above, compressed. If you can re-draw this from memory, you understand the platform.</p>
+    <figure class="bigmodel" aria-label="Complete mental model diagram">
+      <div class="bm-band bm-in">
+        <span class="bm-tag">IN</span>
+        <div class="bm-box">Public registries<small>Docker Hub, npm, PyPI…</small></div>
+        <span class="bm-op">+</span>
+        <div class="bm-box">Your CI builds<small>images, jars, charts</small></div>
+      </div>
+      <div class="bm-arrow">↓ everything flows through ↓</div>
+      <div class="bm-band bm-core">
+        <div class="bm-core-inner">
+          <span class="bm-title bm-title-art">ARTIFACTORY · the warehouse</span>
+          <div class="bm-repos">
+            <span class="pill pill-remote">Remote (cache)</span>
+            <span class="pill pill-local">Local (your builds)</span>
+            <span class="pill pill-virtual">Virtual (one URL)</span>
+            <span class="pill pill-fed">Federated (multi-site)</span>
+          </div>
+          <div class="bm-xray">
+            <span class="bm-title bm-title-x">XRAY · the inspector</span>
+            <span class="bm-xray-line">deep recursive scan → CVEs · licenses · SBOM → Policy + Watch → violation</span>
+          </div>
+        </div>
+      </div>
+      <div class="bm-arrow">↓ only what passes the gate ↓</div>
+      <div class="bm-band bm-out">
+        <span class="bm-tag">OUT</span>
+        <div class="bm-box">Developers &amp; CI<small>resolve via one virtual URL</small></div>
+        <span class="bm-op">→</span>
+        <div class="bm-box">Production<small>approved artifacts only</small></div>
+      </div>
+    </figure>
+    <div class="recap">
+      <p class="recap-title">If you remember 4 things:</p>
+      <ol>
+        <li><b>Artifactory = the single warehouse</b> for every binary, in and out.</li>
+        <li><b>4 repo types</b>: Local (yours), Remote (cached internet), Virtual (one URL over both), Federated (multi-site).</li>
+        <li><b>Xray = the inspector</b> doing deep recursive scans for CVEs &amp; license risk, continuously.</li>
+        <li><b>Policy (the rule) + Watch (the scope)</b> = how findings turn into enforced violations.</li>
+      </ol>
+    </div>
+  </section>
+
+  """,
+}
+_p["prev"], _p["next"] = chain(_p["file"])
+PAGE_LIST.append(_p)
+
+
+# =====================================================================
+# 2) REPLICATION & FEDERATION
 # =====================================================================
 _p = {
  "file": "replication-federation.html",
@@ -284,7 +727,7 @@ Content-Type: application/json
     </figure>
     <div class="callout callout-tip">
       <p class="callout-title">Tie it back to Xray</p>
-      <p>The power move: a <a href="fundamentals.html#policies">Policy + Watch</a> on <code>staging-local</code> blocks promotion to <code>release-local</code> if a High/Critical CVE with an available fix is present. (A <b>CVE</b> - Common Vulnerabilities and Exposures - is a publicly catalogued security flaw, each with an ID like <code>CVE-2021-44228</code>.) Promotion becomes your enforced quality gate, not a manual courtesy.</p>
+      <p>The power move: a <a href="xray-policies-watches.html">Policy + Watch</a> on <code>staging-local</code> blocks promotion to <code>release-local</code> if a High/Critical CVE with an available fix is present. (A <b>CVE</b> - Common Vulnerabilities and Exposures - is a publicly catalogued security flaw, each with an ID like <code>CVE-2021-44228</code>.) Promotion becomes your enforced quality gate, not a manual courtesy. To write that rule and wire the Watch, see <a href="xray-policies-watches.html">Xray Policies &amp; Watches</a>.</p>
     </div>
   </section>
 """,
@@ -643,7 +1086,7 @@ jobs:
     </div>
     <div class="callout callout-tip">
       <p class="callout-title">The shift-left ladder</p>
-      <p><b>IDE plugin</b> (as you type) → <b>Frogbot</b> (on the PR) → <b>Xray indexing + Watch</b> (in Artifactory) → <b>build-scan gate</b> (in CI). Each rung catches issues later and more expensively, so push detection as far left as you can.</p>
+      <p><b>IDE plugin</b> (as you type) → <b>Frogbot</b> (on the PR) → <b>Xray indexing + <a href="xray-policies-watches.html">Watch</a></b> (in Artifactory) → <b>build-scan gate</b> (in CI). Each rung catches issues later and more expensively, so push detection as far left as you can. The Watch and the policies behind every rung are covered in <a href="xray-policies-watches.html">Xray Policies &amp; Watches</a>.</p>
     </div>
   </section>
 """,
@@ -1034,6 +1477,270 @@ PAGE_LIST.append(_p)
 
 
 # =====================================================================
+# 10) XRAY SECURITY: POLICIES & WATCHES (deep treatment)
+# =====================================================================
+_p = {
+ "file": "xray-policies-watches.html",
+ "title": "Xray Policies & Watches",
+ "desc": "Write Xray security, license, and operational-risk rules; pick enforcement actions with grace periods; create a watch and attach the policy. The hands-on layer above the Fundamentals overview.",
+ "badges": '<span class="lvl lvl-xray">Xray</span><span class="lvl">Security</span><span class="lvl lvl-lab">Hands-on</span>',
+ "h1": "Xray Policies &amp; Watches",
+ "lede": "Finding a vulnerability is only half the job - the other half is acting on it automatically. This page is the hands-on layer: how to write the rules inside a Policy, choose what happens when a rule is broken, then create a Watch and point it at your repositories. If the words Policy and Watch are new, read the short Policies &amp; Watches primer on Fundamentals first; here we go deeper and actually build them.",
+ "sections": [
+   {"id": "recap", "label": "30-second recap"},
+   {"id": "model", "label": "The enforcement model"},
+   {"id": "types", "label": "The 3 policy types"},
+   {"id": "security-rules", "label": "Writing security rules"},
+   {"id": "license-rules", "label": "Writing license rules"},
+   {"id": "oprisk-rules", "label": "Operational-risk rules"},
+   {"id": "actions", "label": "Enforcement actions"},
+   {"id": "watches", "label": "Watches: the scope"},
+   {"id": "lab-policy", "label": "Lab A: build a policy"},
+   {"id": "lab-watch", "label": "Lab B: build a watch"},
+   {"id": "connect", "label": "How this connects"},
+   {"id": "recap-box", "label": "Recap"},
+   {"id": "sources", "label": "Sources"},
+ ],
+ "body": """
+  <section id="recap" class="section">
+    <span class="kicker kicker-x">Recap</span>
+    <h2>30-second recap (the two objects)</h2>
+    <p class="prose">Xray's enforcement rests on two linked objects. The <a href="fundamentals.html#policies">Fundamentals page</a> explains the concept in full; here is the one-line version so this page stands on its own. A <strong>Policy</strong> is the <em>law</em>: a set of rules that say what counts as a problem and what to do about it. A <strong>Watch</strong> is the <em>jurisdiction and the police</em>: it says <em>where</em> the law applies and switches enforcement on. A finding only becomes a <strong>violation</strong> when a Watch points a Policy at the place the finding lives. <a href="https://jfrog.com/help/r/jfrog-security-documentation/creating-xray-policies-and-rules" target="_blank" rel="noopener">JFrog - Policy and Governance</a>.</p>
+    <div class="callout callout-q">
+      <p class="callout-title">One term before we start: violation</p>
+      <p>A <b>violation</b> is the record Xray creates when an artifact actually breaks a rule that a Watch has switched on. No Watch, no violation - even if the vulnerability is real and indexed. That is the single most common point of confusion, so keep it in mind as you read.</p>
+    </div>
+  </section>
+
+  <section id="model" class="section">
+    <span class="kicker kicker-x">Mental model</span>
+    <h2>The enforcement model, end to end</h2>
+    <p class="prose">Every piece below has exactly one job. Read the chain left to right: Xray indexes an artifact, a Watch decides it is in scope, the Watch's Policy checks its rules, and if a rule's conditions are met a violation is created and its actions fire.</p>
+    <figure class="flow" aria-label="Xray enforcement pipeline from indexed artifact to action">
+      <div class="flow-row">
+        <div class="flow-step flow-x"><span class="flow-step-n">1</span><b>Indexed artifact</b><small>component graph, scanned</small></div>
+        <span class="flow-conn">&rarr;</span>
+        <div class="flow-step flow-x"><span class="flow-step-n">2</span><b>Watch</b><small>is it in scope?</small></div>
+        <span class="flow-conn">&rarr;</span>
+        <div class="flow-step flow-x"><span class="flow-step-n">3</span><b>Policy + rules</b><small>conditions met?</small></div>
+      </div>
+      <div class="flow-row flow-row-down"><span class="flow-down">if a rule matches</span></div>
+      <div class="flow-row">
+        <div class="flow-step"><span class="flow-step-n">4</span><b>Violation</b><small>the record</small></div>
+        <span class="flow-conn">&rarr;</span>
+        <div class="flow-step flow-lab"><span class="flow-step-n">5</span><b>Actions</b><small>notify / fail / block</small></div>
+      </div>
+      <figcaption>The Policy holds the rules; the Watch supplies the scope. You build them in either order, but nothing is enforced until a Watch ties a Policy to a resource. <a href="https://docs.jfrog.com/security/docs/watches-in-jfrog-xray" target="_blank" rel="noopener">JFrog - Watches in Xray</a>.</figcaption>
+    </figure>
+  </section>
+
+  <section id="types" class="section">
+    <span class="kicker kicker-x">Policy types</span>
+    <h2>The three policy types</h2>
+    <p class="prose">When you create a Policy you pick exactly one type. The type decides which rule conditions you can configure. You cannot mix a license rule into a security policy - you would create one policy of each type and attach both to the same Watch.</p>
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Type</th><th>What it catches</th><th>Typical rule</th></tr></thead>
+        <tbody>
+          <tr><td><b>Security</b></td><td>Known vulnerabilities (CVEs) and malicious packages in your components.</td><td>Block anything with a High or Critical CVE that has a fix available.</td></tr>
+          <tr><td><b>License Compliance</b></td><td>Open-source licenses your organization bans or must track.</td><td>Fail the build if a component uses GPL-3.0.</td></tr>
+          <tr><td><b>Operational Risk</b></td><td>Components that are outdated, deprecated, end-of-life, or poorly maintained.</td><td>Alert if a dependency has not been updated in 12+ months.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose muted">Source: <a href="https://docs.jfrog.com/security/docs/create-policies" target="_blank" rel="noopener">JFrog - Create Policies</a>.</p>
+  </section>
+
+  <section id="security-rules" class="section">
+    <span class="kicker kicker-x">Writing rules</span>
+    <h2>Writing a security rule</h2>
+    <p class="prose">A <strong>rule</strong> is a condition plus the actions to take when it matches. A security policy gives you two ways to define the condition - by how severe the vulnerability is, or by its exact CVSS score. <b>CVSS</b> (Common Vulnerability Scoring System) is the industry-standard 0-10 number that rates how dangerous a flaw is; higher is worse.</p>
+    <div class="split">
+      <div class="split-item" data-accent="xray">
+        <h3 class="subhead">By minimal severity</h3>
+        <p>Pick the lowest severity that should trip the rule. Everything at that level or higher matches.</p>
+        <p class="sev-row">
+          <span class="sev sev-crit">Critical</span>
+          <span class="sev sev-high">High</span>
+          <span class="sev sev-med">Medium</span>
+          <span class="sev sev-low">Low</span>
+          <span class="sev sev-unknown">All</span>
+        </p>
+        <p class="muted">Example: minimal severity = High catches both High and Critical, ignores Medium and below.</p>
+      </div>
+      <div class="split-item" data-accent="xray">
+        <h3 class="subhead">By CVSS range</h3>
+        <p>Set a numeric band, for example CVSS 7.0 to 10.0, when you want finer control than the named buckets give you.</p>
+        <p class="muted">Useful when your org's risk threshold sits between two severity labels.</p>
+      </div>
+    </div>
+    <p class="prose">Two extra conditions sharpen a security rule so you alert on what is actually actionable:</p>
+    <ul class="feature-list">
+      <li><b>Fix version available.</b> Only flag vulnerabilities that have a released fix, so developers always have somewhere to go. This dramatically cuts noise.</li>
+      <li><b>Malicious package.</b> Trip on packages JFrog's security research has flagged as deliberately malicious (for example, typosquats), regardless of CVSS.</li>
+    </ul>
+    <div class="callout callout-tip">
+      <p class="callout-title">A good first security rule</p>
+      <p>Minimal severity = <b>High</b>, with <b>fix version available</b> turned on, action = <b>create a violation</b> plus <b>notify</b>. It is loud enough to matter, quiet enough to act on, and blocks nothing until you trust it. Tighten to <b>block download</b> later.</p>
+    </div>
+    <p class="prose muted">Source: <a href="https://docs.jfrog.com/security/docs/create-policies" target="_blank" rel="noopener">JFrog - Create Policies (Security Policy Rules)</a>.</p>
+  </section>
+
+  <section id="license-rules" class="section">
+    <span class="kicker kicker-x">Writing rules</span>
+    <h2>Writing a license rule</h2>
+    <p class="prose">A license policy enforces which open-source licenses are allowed in your software. You define the condition as one of two lists.</p>
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Approach</th><th>How it works</th><th>When to use it</th></tr></thead>
+        <tbody>
+          <tr><td><b>Banned licenses</b></td><td>List the licenses you forbid (e.g. GPL-3.0, AGPL-3.0). A component carrying any of them trips the rule.</td><td>You only need to block a handful of known-problematic licenses.</td></tr>
+          <tr><td><b>Allowed licenses</b></td><td>List the only licenses you permit (e.g. MIT, Apache-2.0, BSD-3-Clause). Anything outside the list trips the rule.</td><td>Strict shops that want an explicit allow-list - safer by default.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-q">
+      <p class="callout-title">Why a single component can carry several licenses</p>
+      <p>Open-source packages are sometimes dual-licensed or bundle code under more than one license. Xray evaluates every license it detects on a component, so a rule can trip on one license even when others are fine. Build your list with that in mind.</p>
+    </div>
+    <p class="prose muted">Source: <a href="https://jfrog.com/help/r/jfrog-security-documentation/creating-xray-policies-and-rules" target="_blank" rel="noopener">JFrog - Policy and Governance (license rules)</a>.</p>
+  </section>
+
+  <section id="oprisk-rules" class="section">
+    <span class="kicker kicker-x">Writing rules</span>
+    <h2>Operational-risk rules</h2>
+    <p class="prose">Operational risk is about <em>maintainability</em>, not security - components that are stale or abandoned are a liability even when no CVE exists yet. JFrog's documented examples make the intent concrete:</p>
+    <ul class="feature-list">
+      <li><b>Staleness.</b> Alert developers if a dependency has not been updated in 12+ months.</li>
+      <li><b>End-of-life.</b> Fail builds if a package is flagged as end-of-life.</li>
+      <li><b>Deprecation.</b> Block downloads of deprecated components.</li>
+    </ul>
+    <p class="prose muted">Source: <a href="https://docs.jfrog.com/security/docs/create-policies" target="_blank" rel="noopener">JFrog - Create Policies (Operational Risk Rule)</a>.</p>
+  </section>
+
+  <section id="actions" class="section">
+    <span class="kicker kicker-x">Enforcement</span>
+    <h2>What a rule can do: enforcement actions</h2>
+    <p class="prose">Each rule, when matched, always records a <strong>violation</strong>. On top of that you choose any number of automatic actions. They fall into two families: <em>notify</em> (tell someone) and <em>block</em> (stop the artifact from moving).</p>
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Action</th><th>Family</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td>Generate a violation</td><td>Always on</td><td>The record that something broke a rule. Everything else is optional on top.</td></tr>
+          <tr><td>Notify watch recipients / developer / email list</td><td>Notify</td><td>Email the watch owner, the resource's developer, or a configured address list.</td></tr>
+          <tr><td>Trigger a webhook</td><td>Notify</td><td>Call an external endpoint (Slack, a pipeline, your own service) when the rule is violated.</td></tr>
+          <tr><td>Create a Jira ticket</td><td>Notify</td><td>Open a tracking ticket automatically for each violation.</td></tr>
+          <tr><td>Fail builds</td><td>Block</td><td>Make a CI build fail when the rule is violated. Supports a grace period.</td></tr>
+          <tr><td>Block downloads</td><td>Block</td><td>Stop the artifact from being downloaded from Artifactory. Supports a grace period.</td></tr>
+          <tr><td>Block Release Bundle promotion / distribution</td><td>Block</td><td>Stop a Release Bundle from being promoted or distributed in the release lifecycle. Supports a grace period.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-tip">
+      <p class="callout-title">Grace periods: how to roll out blocking without an outage</p>
+      <p>The three blocking actions let you set a <b>grace period</b> - a window where the violation is recorded and teams are warned, but the block does not yet bite. This is the safe way to introduce enforcement: start in notify-only, switch on blocking with a grace period, then let the grace period expire once teams have caught up. <a href="https://docs.jfrog.com/security/docs/create-policies" target="_blank" rel="noopener">JFrog - Create Policies (enforcement actions)</a>.</p>
+    </div>
+  </section>
+
+  <section id="watches" class="section">
+    <span class="kicker kicker-x">Scope</span>
+    <h2>Watches: choosing the scope</h2>
+    <p class="prose">A Watch answers one question: <em>which resources do these policies apply to?</em> When you add resources to a Watch you choose from four kinds of target. A Watch must have at least one policy attached, or it enforces nothing.</p>
+    <div class="table-wrap">
+      <table class="datatable">
+        <thead><tr><th>Resource</th><th>What it scopes</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><b>Repositories</b></td><td>Everything stored in one or more repos.</td><td>Watch <code>docker-prod-local</code> for Critical CVEs.</td></tr>
+          <tr><td><b>Builds</b></td><td>The artifacts and dependencies captured in named builds.</td><td>Watch the <code>payments-api</code> build to gate CI.</td></tr>
+          <tr><td><b>Release Bundles</b></td><td>The signed, immutable bundles you promote and distribute.</td><td>Block distribution of a bundle with a vulnerable base layer.</td></tr>
+          <tr><td><b>Projects</b></td><td>All resources grouped under a JFrog Project.</td><td>Apply one compliance baseline across a whole team's project.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-tip">
+      <p class="callout-title">Best practice: one Watch per environment</p>
+      <p>JFrog recommends separate Watches for different environments - a permissive, notify-only Watch on dev repos and a strict, blocking Watch on production repos - so the same finding is handled appropriately for where it lives. <a href="https://docs.jfrog.com/security/docs/create-watches" target="_blank" rel="noopener">JFrog - Create Watches (best practices)</a>.</p>
+    </div>
+  </section>
+
+  <section id="lab-policy" class="section">
+    <span class="kicker kicker-lab">Lab A</span>
+    <h2>Lab A: create a security policy</h2>
+    <div class="panel-intro">
+      <p>Goal: a policy that records and notifies on High/Critical vulnerabilities that have a fix, blocking nothing yet. This is the exact click-path from the JFrog docs.</p>
+    </div>
+    <ol class="lab-steps">
+      <li><span class="ls-n">1</span><div><b>Open Watches &amp; Policies.</b> In the JFrog Platform, go to <b>Xray &rarr; Watches &amp; Policies</b>.</div></li>
+      <li><span class="ls-n">2</span><div><b>New Policy.</b> Click <b>New Policy</b> and enter a name, for example <code>prod-security-baseline</code>. Add a short description of its purpose.</div></li>
+      <li><span class="ls-n">3</span><div><b>Pick the type.</b> Choose <b>Security Policy</b>.</div></li>
+      <li><span class="ls-n">4</span><div><b>Add a rule.</b> Click <b>Add Rule</b>. Set the rule category to <b>By Minimal Severity = High</b>, and enable <b>Fix version available</b> so you only flag actionable findings.</div></li>
+      <li><span class="ls-n">5</span><div><b>Set actions.</b> Leave the default violation on, and add <b>Notify the watch recipient</b>. Do not enable blocking yet - you will tighten later.</div></li>
+      <li><span class="ls-n">6</span><div><b>Save.</b> Save the policy. It now exists but enforces nothing until a Watch uses it - that is Lab B.</div></li>
+    </ol>
+    <p class="prose muted">Source: <a href="https://docs.jfrog.com/security/docs/create-policies" target="_blank" rel="noopener">JFrog - Create Policies</a>.</p>
+  </section>
+
+  <section id="lab-watch" class="section">
+    <span class="kicker kicker-lab">Lab B</span>
+    <h2>Lab B: create a watch and attach the policy</h2>
+    <div class="panel-intro">
+      <p>Goal: point the policy from Lab A at a real repository so findings start becoming violations.</p>
+    </div>
+    <ol class="lab-steps">
+      <li><span class="ls-n">1</span><div><b>New Watch.</b> Still under <b>Xray &rarr; Watches &amp; Policies</b>, click <b>New Watch</b> and give it a unique name, for example <code>prod-repos-watch</code>.</div></li>
+      <li><span class="ls-n">2</span><div><b>Add resources.</b> Click <b>Add Resources</b> and select what to monitor - a <b>Repository</b> (e.g. your production Docker repo), a <b>Build</b>, a <b>Release Bundle</b>, or a <b>Project</b>. Click <b>Apply</b>.</div></li>
+      <li><span class="ls-n">3</span><div><b>Attach the policy.</b> Link the <code>prod-security-baseline</code> policy from Lab A. A Watch can carry several policies - add a license policy here too if you have one.</div></li>
+      <li><span class="ls-n">4</span><div><b>Save &amp; apply.</b> Save the Watch. Xray evaluates the in-scope resources against the attached policies and starts generating violations on matches.</div></li>
+      <li><span class="ls-n">5</span><div><b>Verify.</b> Open the Watch and review its violations. Seeing the High/Critical findings you expected confirms the policy and scope line up.</div></li>
+    </ol>
+    <div class="callout callout-q">
+      <p class="callout-title">Reminder you will thank yourself for</p>
+      <p>If you created the policy but see no violations, check that a Watch actually attaches it to the right resource. A policy with no Watch is inert by design.</p>
+    </div>
+    <p class="prose muted">Source: <a href="https://docs.jfrog.com/security/docs/create-watches" target="_blank" rel="noopener">JFrog - Create Watches</a>.</p>
+  </section>
+
+  <section id="connect" class="section">
+    <span class="kicker kicker-x">Connections</span>
+    <h2>How this connects to the rest of the platform</h2>
+    <p class="prose">Policies and Watches are the engine; other pages show where that engine plugs in across the software lifecycle:</p>
+    <ul class="feature-list">
+      <li><b>Shift left.</b> The same policies drive earlier feedback - in the IDE and on pull requests - covered on <a href="frogbot.html">Frogbot &amp; IDE</a>.</li>
+      <li><b>Promotion gates.</b> A Watch on a staging repo can block promotion to release when a High/Critical CVE is present - see the worked example on <a href="build-promotion.html#pattern">Build promotion</a>.</li>
+      <li><b>The basics.</b> If indexing, scanning, or the Policy-vs-Watch split still feel fuzzy, the <a href="fundamentals.html#xray">Fundamentals</a> page covers them from zero.</li>
+    </ul>
+  </section>
+
+  <section id="recap-box" class="section">
+    <div class="recap">
+      <h2>Recap</h2>
+      <ul>
+        <li><b>Policy = rules, Watch = scope.</b> Nothing is enforced until a Watch attaches a Policy to a resource; the result of a match is a <b>violation</b>.</li>
+        <li><b>Three policy types.</b> Security (CVEs, malicious), License (banned or allowed lists), Operational risk (stale, EOL, deprecated). One type per policy; attach several policies to one Watch.</li>
+        <li><b>Sharpen security rules</b> with minimal severity or a CVSS range, plus <b>fix-available</b> to cut noise.</li>
+        <li><b>Actions</b> are notify (email, webhook, Jira) or block (fail build, block download, block bundle promotion). Blocking actions support a <b>grace period</b> for safe rollout.</li>
+        <li><b>Watches</b> target repositories, builds, release bundles, or projects. Use one Watch per environment.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="sources" class="section">
+    <span class="kicker">Sources &amp; further reading</span>
+    <h2>Sources / further reading</h2>
+    <ul class="feature-list">
+      <li><a href="https://docs.jfrog.com/security/docs/create-policies" target="_blank" rel="noopener">JFrog Docs - Create Policies</a> (policy types, rule conditions, enforcement actions, grace periods).</li>
+      <li><a href="https://docs.jfrog.com/security/docs/create-watches" target="_blank" rel="noopener">JFrog Docs - Create Watches</a> (resources, attaching policies, best practices).</li>
+      <li><a href="https://docs.jfrog.com/security/docs/watches-in-jfrog-xray" target="_blank" rel="noopener">JFrog Docs - Watches in JFrog Xray</a> (what a Watch is and what it targets).</li>
+      <li><a href="https://jfrog.com/help/r/jfrog-security-documentation/creating-xray-policies-and-rules" target="_blank" rel="noopener">JFrog Help - Policy and Governance</a> (policies across the SDLC, best practices).</li>
+    </ul>
+  </section>
+""",
+}
+_p["prev"], _p["next"] = chain(_p["file"])
+PAGE_LIST.append(_p)
+
+
+# =====================================================================
 # SEARCH METADATA (consumed by build_search_index.py + search.html)
 # =====================================================================
 
@@ -1044,6 +1751,7 @@ GROUPS = {
     "replication-federation.html": "Core concepts",
     "build-promotion.html": "Core concepts",
     "release-bundles.html": "Distribution",
+    "xray-policies-watches.html": "Automation & security",
     "rest-api.html": "Automation & security",
     "frogbot.html": "Automation & security",
     "pipelines.html": "Automation & security",
@@ -1051,22 +1759,9 @@ GROUPS = {
     "kubernetes-helm.html": "Platform ops",
 }
 
-# Fundamentals is authored as a static page (not in PAGE_LIST), so we
-# declare its section anchors/labels here for the section-level index.
-FUNDAMENTALS_SECTIONS = [
-    {"id": "problem", "label": "The problem it solves"},
-    {"id": "glossary", "label": "Vocabulary first"},
-    {"id": "artifactory", "label": "What Artifactory is"},
-    {"id": "repos", "label": "The 4 repository types"},
-    {"id": "architecture", "label": "How it fits together"},
-    {"id": "packages", "label": "Package types"},
-    {"id": "xray", "label": "What Xray is"},
-    {"id": "xray-how", "label": "How scanning works"},
-    {"id": "policies", "label": "Policies & Watches"},
-    {"id": "labs", "label": "Choose your track"},
-    {"id": "cli", "label": "CLI cheat sheet"},
-    {"id": "mental-model", "label": "Full mental model"},
-]
+# Fundamentals is now generated from PAGE_LIST like every other page; its
+# section anchors live in that page dict. (Previously declared here as a
+# special-case when fundamentals was a hand-authored static page.)
 
 # Curated cross-page "related topics" so a result set links the user to
 # connected material without re-searching. file -> list of related files.
@@ -1078,16 +1773,19 @@ RELATED = {
         "fundamentals.html", "release-bundles.html", "kubernetes-helm.html",
     ],
     "build-promotion.html": [
-        "release-bundles.html", "rest-api.html", "pipelines.html", "fundamentals.html",
+        "release-bundles.html", "xray-policies-watches.html", "rest-api.html", "fundamentals.html",
     ],
     "release-bundles.html": [
         "build-promotion.html", "replication-federation.html", "rest-api.html",
+    ],
+    "xray-policies-watches.html": [
+        "frogbot.html", "build-promotion.html", "fundamentals.html", "pipelines.html",
     ],
     "rest-api.html": [
         "access-tokens.html", "build-promotion.html", "frogbot.html", "pipelines.html",
     ],
     "frogbot.html": [
-        "rest-api.html", "access-tokens.html", "pipelines.html", "fundamentals.html",
+        "xray-policies-watches.html", "rest-api.html", "access-tokens.html", "fundamentals.html",
     ],
     "pipelines.html": [
         "build-promotion.html", "rest-api.html", "frogbot.html", "access-tokens.html",
